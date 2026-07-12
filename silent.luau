@@ -449,16 +449,10 @@ local function applyAimAssist(ClosestPart)
     if not isAimAssistHeld() then return end
 
     local TargetPosition = ClosestPart.Position
-    local ScreenPos, OnScreen = getPositionOnScreen(TargetPosition)
-    if not OnScreen then return end
+    local CurrentCFrame = Camera.CFrame
+    local TargetCFrame = CFrame.lookAt(CurrentCFrame.Position, TargetPosition)
 
-    local CurrentMousePos = getMousePosition()
-    local SmoothedPos = CurrentMousePos:Lerp(ScreenPos, AimAssistSettings.Smoothness)
-
-    mousemoverel(
-        SmoothedPos.X - CurrentMousePos.X,
-        SmoothedPos.Y - CurrentMousePos.Y
-    )
+    Camera.CFrame = CurrentCFrame:Lerp(TargetCFrame, AimAssistSettings.Smoothness)
 end
 
 table.insert(RuntimeState.Connections, UserInputService.InputBegan:Connect(function(input, gameProcessed)
