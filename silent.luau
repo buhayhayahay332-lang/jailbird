@@ -448,13 +448,12 @@ local function applyAimAssist(ClosestPart)
     if not ClosestPart then return end
     if not isAimAssistHeld() then return end
 
-    local ScreenPos, OnScreen = getPositionOnScreen(ClosestPart.Position)
+    local TargetPosition = ClosestPart.Position
+    local ScreenPos, OnScreen = getPositionOnScreen(TargetPosition)
     if not OnScreen then return end
 
     local CurrentMousePos = getMousePosition()
-    local TargetPos = ScreenPos
-
-    local SmoothedPos = CurrentMousePos:Lerp(TargetPos, AimAssistSettings.Smoothness)
+    local SmoothedPos = CurrentMousePos:Lerp(ScreenPos, AimAssistSettings.Smoothness)
 
     mousemoverel(
         SmoothedPos.X - CurrentMousePos.X,
