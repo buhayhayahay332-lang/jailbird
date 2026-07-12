@@ -9,7 +9,7 @@ local SilentAimSettings = {
     TeamCheck = true,
     VisibleCheck = false, 
     TargetPart = "Head",
-    SilentAimMethod = "FindPartOnRay",
+    SilentAimMethod = "Raycast",
     
     FOVRadius = 150,
     FOVVisible = true,
@@ -155,24 +155,6 @@ table.insert(RuntimeState.Drawings, radar_self)
 local radar_dots = {}
 
 local ExpectedArguments = {
-    FindPartOnRayWithIgnoreList = {
-        ArgCountRequired = 3,
-        Args = {
-            "Instance", "Ray", "table", "boolean", "boolean"
-        }
-    },
-    FindPartOnRayWithWhitelist = {
-        ArgCountRequired = 3,
-        Args = {
-            "Instance", "Ray", "table", "boolean"
-        }
-    },
-    FindPartOnRay = {
-        ArgCountRequired = 2,
-        Args = {
-            "Instance", "Ray", "Instance", "boolean", "boolean"
-        }
-    },
     Raycast = {
         ArgCountRequired = 3,
         Args = {
@@ -182,13 +164,8 @@ local ExpectedArguments = {
 }
 
 function CalculateChance(Percentage)
-    -- // Floor the percentage
     Percentage = math.floor(Percentage)
-
-    -- // Get the chance
     local chance = math.floor(Random.new().NextNumber(Random.new(), 0, 1) * 100) / 100
-
-    -- // Return
     return chance <= Percentage / 100
 end
 
@@ -479,8 +456,7 @@ coroutine.resume(coroutine.create(function()
         if isTargetVisible() and isSilentAimEnabled() then
             if ClosestPlayer then 
                 local Root = ClosestPlayer.Parent.PrimaryPart or ClosestPlayer
-                local RootToViewportPoint, IsOnScreen = WorldToViewportPoint(Camera, Root.Position);
-                -- using PrimaryPart instead because if your Target Part is "Random" it will flicker the square between the Target's Head and HumanoidRootPart (its annoying)
+                local RootToViewportPoint, IsOnScreen = WorldToViewportPoint(Camera, Root.Position)
                 
                 mouse_box.Visible = IsOnScreen
                 mouse_box.Position = Vector2.new(RootToViewportPoint.X, RootToViewportPoint.Y)
@@ -514,59 +490,21 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(...)
     local Arguments = {...}
     local self = Arguments[1]
     local chance = CalculateChance(SilentAimSettings.HitChance)
+
     if isSilentAimEnabled() and self == workspace and not checkcaller() and chance == true then
-        if Method == "FindPartOnRayWithIgnoreList" and getMethod() == Method then
-            if ValidateArguments(Arguments, ExpectedArguments.FindPartOnRayWithIgnoreList) then
-                local A_Ray = Arguments[2]
-
-                local HitPart = getClosestPlayer()
-                if HitPart then
-                    local Origin = A_Ray.Origin
-                    local Direction = getDirection(Origin, HitPart.Position)
-                    Arguments[2] = Ray.new(Origin, Direction)
-
-                    return oldNamecall(unpack(Arguments))
-                end
-            end
-        elseif Method == "FindPartOnRayWithWhitelist" and getMethod() == Method then
-            if ValidateArguments(Arguments, ExpectedArguments.FindPartOnRayWithWhitelist) then
-                local A_Ray = Arguments[2]
-
-                local HitPart = getClosestPlayer()
-                if HitPart then
-                    local Origin = A_Ray.Origin
-                    local Direction = getDirection(Origin, HitPart.Position)
-                    Arguments[2] = Ray.new(Origin, Direction)
-
-                    return oldNamecall(unpack(Arguments))
-                end
-            end
-        elseif (Method == "FindPartOnRay" or Method == "findPartOnRay") and getMethod():lower() == Method:lower() then
-            if ValidateArguments(Arguments, ExpectedArguments.FindPartOnRay) then
-                local A_Ray = Arguments[2]
-
-                local HitPart = getClosestPlayer()
-                if HitPart then
-                    local Origin = A_Ray.Origin
-                    local Direction = getDirection(Origin, HitPart.Position)
-                    Arguments[2] = Ray.new(Origin, Direction)
-
-                    return oldNamecall(unpack(Arguments))
-                end
-            end
-        elseif Method == "Raycast" and getMethod() == Method then
+        if Method == "Raycast" and getMethod() == Method then
             if ValidateArguments(Arguments, ExpectedArguments.Raycast) then
                 local A_Origin = Arguments[2]
 
                 local HitPart = getClosestPlayer()
                 if HitPart then
                     Arguments[3] = getDirection(A_Origin, HitPart.Position)
-
                     return oldNamecall(unpack(Arguments))
                 end
             end
         end
     end
+
     return oldNamecall(...)
 end))
 
