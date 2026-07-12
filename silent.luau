@@ -507,39 +507,3 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(...)
 
     return oldNamecall(...)
 end))
-
-local oldIndex = nil 
-oldIndex = hookmetamethod(game, "__index", newcclosure(function(self, Index)
-    if Global.__test_lua_state ~= RuntimeState then
-        return oldIndex(self, Index)
-    end
-
-    if self ~= Mouse or checkcaller() or not isSilentAimEnabled() or getMethod() ~= "Mouse.Hit/Target" then
-        return oldIndex(self, Index)
-    end
-
-    if Index == "X" or Index == "x" or Index == "Y" or Index == "y" then
-        return oldIndex(self, Index)
-    end
-
-    if Index ~= "Target" and Index ~= "target" and Index ~= "Hit" and Index ~= "hit" and Index ~= "UnitRay" then
-        return oldIndex(self, Index)
-    end
-
-    local HitPart = getClosestPlayer()
-    if not HitPart then
-        return oldIndex(self, Index)
-    end
-
-    if Index == "Target" or Index == "target" then 
-        return HitPart
-    elseif Index == "Hit" or Index == "hit" then 
-        return ((SilentAimSettings.MouseHitPrediction and (HitPart.CFrame + (HitPart.Velocity * PredictionAmount))) or HitPart.CFrame)
-    elseif Index == "UnitRay" then
-        local Origin = oldIndex(self, "Origin")
-        local HitPosition = (SilentAimSettings.MouseHitPrediction and (HitPart.Position + (HitPart.Velocity * PredictionAmount))) or HitPart.Position
-        return Ray.new(Origin, (HitPosition - Origin).Unit)
-    end
-
-    return oldIndex(self, Index)
-end))
