@@ -1,9 +1,11 @@
 local base = "https://raw.githubusercontent.com/buhayhayahay332-lang/jailbird/main/"
 
 local ESP = loadstring(game:HttpGet(base .. "c_esp.luau"))()
+loadstring(game:HttpGet(base .. "gun_mod.luau"))()
 loadstring(game:HttpGet(base .. "silent.luau"))()
 
 local SilentAimSettings = getgenv().SilentAimSettings
+local GunModSettings = getgenv().GunModSettings
 local RadarSettings     = getgenv().RadarSettings
 local AimAssistSettings = getgenv().AimAssistSettings
 
@@ -29,6 +31,7 @@ local Window = Library:CreateWindow({
 
 local Tabs = {
     SilentAim = Window:AddTab("Silent Aim", "crosshair"),
+    GunMod    = Window:AddTab("Gun Mod",    "sliders-horizontal"),
     Visuals   = Window:AddTab("Visuals",    "eye"),
     Settings  = Window:AddTab("Settings",   "settings"),
 }
@@ -157,6 +160,61 @@ SAFOVGroup:AddToggle("SAShowTarget", {
     Default  = SilentAimSettings.ShowSilentAimTarget,
     Callback = function(v)
         SilentAimSettings.ShowSilentAimTarget = v
+    end,
+})
+
+-- GUN MOD TAB
+
+local GunModGroup = Tabs.GunMod:AddLeftGroupbox("Gun Mod", "sliders-horizontal")
+
+GunModGroup:AddToggle("GunModEnabled", {
+    Text     = "Enable Gun Mod",
+    Default  = GunModSettings.Enabled,
+    Callback = function(v)
+        GunModSettings.Enabled = v
+    end,
+})
+
+GunModGroup:AddToggle("GunModNoRecoil", {
+    Text     = "No Recoil",
+    Default  = GunModSettings.NoRecoil,
+    Callback = function(v)
+        GunModSettings.NoRecoil = v
+    end,
+})
+
+GunModGroup:AddToggle("GunModNoSpread", {
+    Text     = "No Spread",
+    Default  = GunModSettings.NoSpread,
+    Callback = function(v)
+        GunModSettings.NoSpread = v
+    end,
+})
+
+GunModGroup:AddToggle("GunModFasterFire", {
+    Text     = "Faster Fire",
+    Default  = GunModSettings.FasterFire,
+    Callback = function(v)
+        GunModSettings.FasterFire = v
+    end,
+})
+
+GunModGroup:AddSlider("GunModFireRateMultiplier", {
+    Text     = "Fire Rate Multiplier",
+    Default  = GunModSettings.FireRateMultiplier,
+    Min      = 1,
+    Max      = 5,
+    Rounding = 1,
+    Callback = function(v)
+        GunModSettings.FireRateMultiplier = v
+    end,
+})
+
+GunModGroup:AddToggle("GunModVerbose", {
+    Text     = "Verbose Logging",
+    Default  = GunModSettings.Verbose,
+    Callback = function(v)
+        GunModSettings.Verbose = v
     end,
 })
 
