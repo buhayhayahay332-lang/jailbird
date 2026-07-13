@@ -9,21 +9,24 @@ local SilentAimSettings = {
     TeamCheck = true,
     VisibleCheck = false, 
     TargetPart = "Head",
-    SilentAimMethod = "FindPartOnRay",
+    SilentAimMethod = "Raycast",
     
     FOVRadius = 150,
     FOVVisible = true,
     ShowSilentAimTarget = true, 
-    
-    MouseHitPrediction = false,
-    MouseHitPredictionAmount = 0.165,
     HitChance = 100
+}
+
+local AimAssistSettings = {
+    Enabled = false,
+    Smoothness = 0.15,
+    BindKey = "MouseButton2"
 }
 
 -- variables
 local Global = getgenv()
 Global.SilentAimSettings = SilentAimSettings
-
+Global.AimAssistSettings = AimAssistSettings
 if Global.__test_lua_cleanup then
     pcall(Global.__test_lua_cleanup)
 end
@@ -54,7 +57,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
+
 
 local GetPlayers = Players.GetPlayers
 local WorldToScreen = Camera.WorldToScreenPoint
@@ -65,7 +68,6 @@ local RenderStepped = RunService.RenderStepped
 local GetMouseLocation = UserInputService.GetMouseLocation
 
 local ValidTargetParts = {"Head", "HumanoidRootPart"}
-local PredictionAmount = 0.165
 
 local mouse_box = Drawing.new("Square")
 mouse_box.Visible = true 
@@ -85,7 +87,7 @@ fov_circle.Filled = false
 fov_circle.Visible = false
 fov_circle.ZIndex = 999
 fov_circle.Transparency = 1
-fov_circle.Color = Color3.fromRGB(54, 57, 241)
+fov_circle.Color = Color3.fromRGB(0, 255, 0)
 fov_circle.Radius = SilentAimSettings.FOVRadius
 fov_circle.Visible = SilentAimSettings.FOVVisible
 table.insert(RuntimeState.Drawings, fov_circle)
@@ -155,24 +157,6 @@ table.insert(RuntimeState.Drawings, radar_self)
 local radar_dots = {}
 
 local ExpectedArguments = {
-    FindPartOnRayWithIgnoreList = {
-        ArgCountRequired = 3,
-        Args = {
-            "Instance", "Ray", "table", "boolean", "boolean"
-        }
-    },
-    FindPartOnRayWithWhitelist = {
-        ArgCountRequired = 3,
-        Args = {
-            "Instance", "Ray", "table", "boolean"
-        }
-    },
-    FindPartOnRay = {
-        ArgCountRequired = 2,
-        Args = {
-            "Instance", "Ray", "Instance", "boolean", "boolean"
-        }
-    },
     Raycast = {
         ArgCountRequired = 3,
         Args = {
@@ -182,13 +166,8 @@ local ExpectedArguments = {
 }
 
 function CalculateChance(Percentage)
-    -- // Floor the percentage
     Percentage = math.floor(Percentage)
-
-    -- // Get the chance
     local chance = math.floor(Random.new().NextNumber(Random.new(), 0, 1) * 100) / 100
-
-    -- // Return
     return chance <= Percentage / 100
 end
 
@@ -242,7 +221,6 @@ local function syncVisualState()
     mouse_box.Visible = isSilentAimEnabled() and isTargetVisible()
     fov_circle.Visible = isFovVisible()
     fov_circle.Radius = SilentAimSettings.FOVRadius
-    PredictionAmount = SilentAimSettings.MouseHitPredictionAmount
 end
 
 local function getCharacterRoot(character)
@@ -459,6 +437,24 @@ end
 
 syncVisualState()
 
+local function isAimAssistHeld()
+    if AimAssistSettings.BindKey == "MouseButton2" then
+        return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+    end
+    return UserInputService:IsKeyDown(Enum.KeyCode[AimAssistSettings.BindKey])
+end
+
+local function applyAimAssist(ClosestPart)
+    if not ClosestPart then return end
+    if not isAimAssistHeld() then return end
+
+    local TargetPosition = ClosestPart.Position
+    local CurrentCFrame = Camera.CFrame
+    local TargetCFrame = CFrame.lookAt(CurrentCFrame.Position, TargetPosition)
+
+    Camera.CFrame = CurrentCFrame:Lerp(TargetCFrame, AimAssistSettings.Smoothness)
+end
+
 table.insert(RuntimeState.Connections, UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if Global.__test_lua_state ~= RuntimeState then return end
     if gameProcessed then return end
@@ -476,11 +472,14 @@ coroutine.resume(coroutine.create(function()
         if Global.__test_lua_state ~= RuntimeState then return end
         local ClosestPlayer = getClosestPlayer()
 
+      if AimAssistSettings.Enabled then
+            applyAimAssist(ClosestPlayer)
+        end
+
         if isTargetVisible() and isSilentAimEnabled() then
             if ClosestPlayer then 
                 local Root = ClosestPlayer.Parent.PrimaryPart or ClosestPlayer
-                local RootToViewportPoint, IsOnScreen = WorldToViewportPoint(Camera, Root.Position);
-                -- using PrimaryPart instead because if your Target Part is "Random" it will flicker the square between the Target's Head and HumanoidRootPart (its annoying)
+                local RootToViewportPoint, IsOnScreen = WorldToViewportPoint(Camera, Root.Position)
                 
                 mouse_box.Visible = IsOnScreen
                 mouse_box.Position = Vector2.new(RootToViewportPoint.X, RootToViewportPoint.Y)
@@ -514,94 +513,20 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(...)
     local Arguments = {...}
     local self = Arguments[1]
     local chance = CalculateChance(SilentAimSettings.HitChance)
+
     if isSilentAimEnabled() and self == workspace and not checkcaller() and chance == true then
-        if Method == "FindPartOnRayWithIgnoreList" and getMethod() == Method then
-            if ValidateArguments(Arguments, ExpectedArguments.FindPartOnRayWithIgnoreList) then
-                local A_Ray = Arguments[2]
-
-                local HitPart = getClosestPlayer()
-                if HitPart then
-                    local Origin = A_Ray.Origin
-                    local Direction = getDirection(Origin, HitPart.Position)
-                    Arguments[2] = Ray.new(Origin, Direction)
-
-                    return oldNamecall(unpack(Arguments))
-                end
-            end
-        elseif Method == "FindPartOnRayWithWhitelist" and getMethod() == Method then
-            if ValidateArguments(Arguments, ExpectedArguments.FindPartOnRayWithWhitelist) then
-                local A_Ray = Arguments[2]
-
-                local HitPart = getClosestPlayer()
-                if HitPart then
-                    local Origin = A_Ray.Origin
-                    local Direction = getDirection(Origin, HitPart.Position)
-                    Arguments[2] = Ray.new(Origin, Direction)
-
-                    return oldNamecall(unpack(Arguments))
-                end
-            end
-        elseif (Method == "FindPartOnRay" or Method == "findPartOnRay") and getMethod():lower() == Method:lower() then
-            if ValidateArguments(Arguments, ExpectedArguments.FindPartOnRay) then
-                local A_Ray = Arguments[2]
-
-                local HitPart = getClosestPlayer()
-                if HitPart then
-                    local Origin = A_Ray.Origin
-                    local Direction = getDirection(Origin, HitPart.Position)
-                    Arguments[2] = Ray.new(Origin, Direction)
-
-                    return oldNamecall(unpack(Arguments))
-                end
-            end
-        elseif Method == "Raycast" and getMethod() == Method then
+        if Method == "Raycast" and getMethod() == Method then
             if ValidateArguments(Arguments, ExpectedArguments.Raycast) then
                 local A_Origin = Arguments[2]
 
                 local HitPart = getClosestPlayer()
                 if HitPart then
                     Arguments[3] = getDirection(A_Origin, HitPart.Position)
-
                     return oldNamecall(unpack(Arguments))
                 end
             end
         end
     end
+
     return oldNamecall(...)
-end))
-
-local oldIndex = nil 
-oldIndex = hookmetamethod(game, "__index", newcclosure(function(self, Index)
-    if Global.__test_lua_state ~= RuntimeState then
-        return oldIndex(self, Index)
-    end
-
-    if self ~= Mouse or checkcaller() or not isSilentAimEnabled() or getMethod() ~= "Mouse.Hit/Target" then
-        return oldIndex(self, Index)
-    end
-
-    if Index == "X" or Index == "x" or Index == "Y" or Index == "y" then
-        return oldIndex(self, Index)
-    end
-
-    if Index ~= "Target" and Index ~= "target" and Index ~= "Hit" and Index ~= "hit" and Index ~= "UnitRay" then
-        return oldIndex(self, Index)
-    end
-
-    local HitPart = getClosestPlayer()
-    if not HitPart then
-        return oldIndex(self, Index)
-    end
-
-    if Index == "Target" or Index == "target" then 
-        return HitPart
-    elseif Index == "Hit" or Index == "hit" then 
-        return ((SilentAimSettings.MouseHitPrediction and (HitPart.CFrame + (HitPart.Velocity * PredictionAmount))) or HitPart.CFrame)
-    elseif Index == "UnitRay" then
-        local Origin = oldIndex(self, "Origin")
-        local HitPosition = (SilentAimSettings.MouseHitPrediction and (HitPart.Position + (HitPart.Velocity * PredictionAmount))) or HitPart.Position
-        return Ray.new(Origin, (HitPosition - Origin).Unit)
-    end
-
-    return oldIndex(self, Index)
 end))
