@@ -529,8 +529,4 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(...)
     end
 
     return oldNamecall(...)
-<<<<<<< HEAD
 end))
-=======
-end))
->>>>>>> 13611ce75c29f9c31561a38ab586671df606b356
