@@ -264,7 +264,6 @@ RunService.Heartbeat:Connect(function()
         applyPhase()
     end
 
-    -- continuously enforce CanCollide = false every frame while phase is on
     if LocalPlayerSettings.PhaseEnabled == true then
         for part in pairs(phaseParts) do
             if part and part.Parent then
