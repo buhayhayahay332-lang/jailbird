@@ -15,6 +15,7 @@ getgenv().GunModSettings = GunModSettings
 
 local originalSettings = setmetatable({}, { __mode = "k" })
 local seenTools = setmetatable({}, { __mode = "k" })
+local hookedTools = setmetatable({}, { __mode = "k" })
 
 local function log(...)
     if GunModSettings.Verbose then
@@ -121,13 +122,96 @@ local function applySettings(settings)
     end
 end
 
+local function safeRawGet(value, key)
+    if type(value) ~= "table" then
+        return nil
+    end
+
+    local ok, result = pcall(rawget, value, key)
+    if ok then
+        return result
+    end
+
+    return nil
+end
+
+local function processRuntimeToolData(toolData)
+    if type(toolData) ~= "table" then
+        return false
+    end
+
+    local settings = safeRawGet(toolData, "Settings")
+    if looksLikeWeaponSettings(settings) then
+        applySettings(settings)
+        return true
+    end
+
+    return false
+end
+
+local function processWeaponController(controller)
+    local patched = false
+    local currentTool = safeRawGet(controller, "CurrentTool")
+    local tools = safeRawGet(controller, "Tools")
+
+    if processRuntimeToolData(currentTool) then
+        patched = true
+    end
+
+    if type(tools) == "table" then
+        for _, toolData in pairs(tools) do
+            if processRuntimeToolData(toolData) then
+                patched = true
+            end
+        end
+    end
+
+    return patched
+end
+
+local function scanRuntimeWeaponData()
+    if type(getgc) ~= "function" then
+        return false
+    end
+
+    local ok, objects = pcall(getgc, true)
+    if not ok or type(objects) ~= "table" then
+        return false
+    end
+
+    local patched = false
+
+    for _, object in ipairs(objects) do
+        if type(object) == "table" then
+            local currentTool = safeRawGet(object, "CurrentTool")
+            local tools = safeRawGet(object, "Tools")
+
+            if type(currentTool) == "table" or type(tools) == "table" then
+                if processWeaponController(object) then
+                    patched = true
+                end
+            end
+        end
+    end
+
+    return patched
+end
+
+local function scanRuntimeWeaponDataDelayed()
+    task.defer(scanRuntimeWeaponData)
+
+    for i = 1, 8 do
+        task.delay(i * 0.15, scanRuntimeWeaponData)
+    end
+end
+
 local function installCloneHook()
     if type(hookfunction) ~= "function" or type(table.clone) ~= "function" then
         return false
     end
 
     local originalClone
-    originalClone = hookfunction(table.clone, function(value)
+    local ok, hookedClone = pcall(hookfunction, table.clone, function(value)
         local clone = originalClone(value)
 
         if GunModSettings.Enabled == true and looksLikeWeaponSettings(value) then
@@ -137,6 +221,11 @@ local function installCloneHook()
         return clone
     end)
 
+    if not ok then
+        return false
+    end
+
+    originalClone = hookedClone
     return true
 end
 
@@ -155,6 +244,10 @@ local function restoreAllSettings()
 end
 
 local function processTool(tool)
+    if GunModSettings.Enabled ~= true then
+        return
+    end
+
     local settingsModule = getToolSettingsModule(tool)
     if not settingsModule then
         return
@@ -173,6 +266,24 @@ local function processTool(tool)
     applySettings(settings)
 end
 
+local function hookTool(tool)
+    if not tool or not tool:IsA("Tool") or hookedTools[tool] == true then
+        return
+    end
+
+    hookedTools[tool] = true
+
+    tool.Equipped:Connect(function()
+        scanRuntimeWeaponDataDelayed()
+    end)
+
+    tool.ChildAdded:Connect(function(child)
+        if child.Name == "Settings" then
+            scanRuntimeWeaponDataDelayed()
+        end
+    end)
+end
+
 local function scanContainer(container)
     if not container then
         return
@@ -180,6 +291,7 @@ local function scanContainer(container)
 
     for _, child in ipairs(container:GetChildren()) do
         if child:IsA("Tool") then
+            hookTool(child)
             processTool(child)
         end
     end
@@ -201,6 +313,8 @@ local function hookContainer(container)
 
     container.ChildAdded:Connect(function(child)
         if child:IsA("Tool") then
+            hookTool(child)
+            scanRuntimeWeaponDataDelayed()
             task.defer(processTool, child)
         end
     end)
@@ -208,12 +322,18 @@ end
 
 task.defer(function()
     local wasEnabled = GunModSettings.Enabled == true
+    local lastRuntimeScan = 0
 
     while true do
         local enabled = GunModSettings.Enabled == true
 
         if enabled then
             scanPlayer()
+
+            if os.clock() - lastRuntimeScan >= 1 then
+                lastRuntimeScan = os.clock()
+                scanRuntimeWeaponData()
+            end
         elseif wasEnabled then
             restoreAllSettings()
         end

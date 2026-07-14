@@ -2,10 +2,12 @@ local base = "https://raw.githubusercontent.com/buhayhayahay332-lang/jailbird/ma
 
 local ESP = loadstring(game:HttpGet(base .. "c_esp.luau"))()
 loadstring(game:HttpGet(base .. "gun_mod.luau"))()
+loadstring(game:HttpGet(base .. "local_player.luau"))()
 loadstring(game:HttpGet(base .. "silent.luau"))()
 
 local SilentAimSettings = getgenv().SilentAimSettings
 local GunModSettings = getgenv().GunModSettings
+local LocalPlayerSettings = getgenv().LocalPlayerSettings
 local RadarSettings     = getgenv().RadarSettings
 local AimAssistSettings = getgenv().AimAssistSettings
 
@@ -32,6 +34,7 @@ local Window = Library:CreateWindow({
 local Tabs = {
     SilentAim = Window:AddTab("Silent Aim", "crosshair"),
     GunMod    = Window:AddTab("Gun Mod",    "sliders-horizontal"),
+    LocalPlayer = Window:AddTab("Local Player", "user"),
     Visuals   = Window:AddTab("Visuals",    "eye"),
     Settings  = Window:AddTab("Settings",   "settings"),
 }
@@ -215,6 +218,60 @@ GunModGroup:AddToggle("GunModVerbose", {
     Default  = GunModSettings.Verbose,
     Callback = function(v)
         GunModSettings.Verbose = v
+    end,
+})
+
+-- LOCAL PLAYER TAB
+
+local MovementGroup = Tabs.LocalPlayer:AddLeftGroupbox("Movement", "move")
+
+MovementGroup:AddToggle("LPWalkSpeedEnabled", {
+    Text     = "Enable Walk Speed",
+    Default  = LocalPlayerSettings.WalkSpeedEnabled,
+    Callback = function(v)
+        LocalPlayerSettings.WalkSpeedEnabled = v
+    end,
+})
+
+MovementGroup:AddSlider("LPWalkSpeed", {
+    Text     = "Walk Speed",
+    Default  = LocalPlayerSettings.WalkSpeed,
+    Min      = 16,
+    Max      = 120,
+    Rounding = 0,
+    Callback = function(v)
+        LocalPlayerSettings.WalkSpeed = v
+    end,
+})
+
+MovementGroup:AddDivider()
+
+MovementGroup:AddToggle("LPPhaseEnabled", {
+    Text     = "Phase Through Walls",
+    Default  = LocalPlayerSettings.PhaseEnabled,
+    Callback = function(v)
+        LocalPlayerSettings.PhaseEnabled = v
+    end,
+})
+
+local FlyGroup = Tabs.LocalPlayer:AddRightGroupbox("Fly", "plane")
+
+FlyGroup:AddToggle("LPFlyEnabled", {
+    Text     = "Enable Fly",
+    Default  = LocalPlayerSettings.FlyEnabled,
+    Callback = function(v)
+        LocalPlayerSettings.FlyEnabled = v
+    end,
+})
+
+FlyGroup:AddSlider("LPFlySpeed", {
+    Text     = "Fly Speed",
+    Default  = LocalPlayerSettings.FlySpeed,
+    Min      = 10,
+    Max      = 200,
+    Rounding = 0,
+    Callback = function(v)
+        LocalPlayerSettings.FlySpeed = v
     end,
 })
 
