@@ -159,6 +159,7 @@ local function hookPhaseCharacter(character)
     table.insert(phaseConnections, character.DescendantAdded:Connect(trackPhasePart))
     table.insert(phaseConnections, character.DescendantRemoving:Connect(function(descendant)
         phaseParts[descendant] = nil
+        originalCollision[descendant] = nil
     end))
 end
 
@@ -166,12 +167,11 @@ local function applyPhase()
     if LocalPlayerSettings.PhaseEnabled == true then
         for part in pairs(phaseParts) do
             if part and part.Parent then
-                trackPhasePart(part)
+                part.CanCollide = false
             else
                 phaseParts[part] = nil
             end
         end
-
         return
     end
 
@@ -179,7 +179,6 @@ local function applyPhase()
         if part and part.Parent then
             part.CanCollide = original
         end
-
         originalCollision[part] = nil
     end
 end
@@ -263,6 +262,17 @@ RunService.Heartbeat:Connect(function()
     if phaseEnabled ~= lastPhaseEnabled then
         lastPhaseEnabled = phaseEnabled
         applyPhase()
+    end
+
+    -- continuously enforce CanCollide = false every frame while phase is on
+    if LocalPlayerSettings.PhaseEnabled == true then
+        for part in pairs(phaseParts) do
+            if part and part.Parent then
+                part.CanCollide = false
+            else
+                phaseParts[part] = nil
+            end
+        end
     end
 end)
 
