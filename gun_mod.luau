@@ -198,11 +198,11 @@ local function scanRuntimeWeaponData()
 end
 
 local function scanRuntimeWeaponDataDelayed()
-    task.defer(scanRuntimeWeaponData)
-
-    for i = 1, 8 do
-        task.delay(i * 0.15, scanRuntimeWeaponData)
+    if GunModSettings.Enabled ~= true then
+        return
     end
+
+    task.delay(0.2, scanRuntimeWeaponData)
 end
 
 local function installCloneHook()
@@ -322,18 +322,12 @@ end
 
 task.defer(function()
     local wasEnabled = GunModSettings.Enabled == true
-    local lastRuntimeScan = 0
 
     while true do
         local enabled = GunModSettings.Enabled == true
 
         if enabled then
             scanPlayer()
-
-            if os.clock() - lastRuntimeScan >= 1 then
-                lastRuntimeScan = os.clock()
-                scanRuntimeWeaponData()
-            end
         elseif wasEnabled then
             restoreAllSettings()
         end

@@ -16,8 +16,13 @@ local LocalPlayerSettings = getgenv().LocalPlayerSettings or {
 getgenv().LocalPlayerSettings = LocalPlayerSettings
 
 local originalWalkSpeeds = setmetatable({}, { __mode = "k" })
+local walkSpeedConnections = setmetatable({}, { __mode = "k" })
 local originalCollision = setmetatable({}, { __mode = "k" })
 local originalHumanoidState = setmetatable({}, { __mode = "k" })
+local phaseConnections = {}
+local phaseParts = {}
+local lastPhaseEnabled = LocalPlayerSettings.PhaseEnabled == true
+local applyingWalkSpeed = false
 local wasFlying = false
 
 local function getCharacter()
@@ -56,47 +61,117 @@ local function restoreHumanoidState(humanoid)
     originalHumanoidState[humanoid] = nil
 end
 
+local function getTargetWalkSpeed()
+    return tonumber(LocalPlayerSettings.WalkSpeed) or 16
+end
+
+local function setWalkSpeed(humanoid, speed)
+    if not humanoid or humanoid.WalkSpeed == speed then
+        return
+    end
+
+    applyingWalkSpeed = true
+    humanoid.WalkSpeed = speed
+    applyingWalkSpeed = false
+end
+
+local function hookWalkSpeedHumanoid(humanoid)
+    if not humanoid or walkSpeedConnections[humanoid] then
+        return
+    end
+
+    walkSpeedConnections[humanoid] = humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+        if applyingWalkSpeed or LocalPlayerSettings.WalkSpeedEnabled ~= true then
+            return
+        end
+
+        setWalkSpeed(humanoid, getTargetWalkSpeed())
+    end)
+end
+
 local function applyWalkSpeed()
     local humanoid = getHumanoid()
     if not humanoid then
         return
     end
 
+    hookWalkSpeedHumanoid(humanoid)
+
     if not originalWalkSpeeds[humanoid] then
         originalWalkSpeeds[humanoid] = humanoid.WalkSpeed
     end
 
     if LocalPlayerSettings.WalkSpeedEnabled == true then
-        humanoid.WalkSpeed = tonumber(LocalPlayerSettings.WalkSpeed) or 16
+        setWalkSpeed(humanoid, getTargetWalkSpeed())
     else
         local original = originalWalkSpeeds[humanoid]
         if original then
-            humanoid.WalkSpeed = original
+            setWalkSpeed(humanoid, original)
             originalWalkSpeeds[humanoid] = nil
         end
     end
 end
 
-local function setCharacterCollision(character, canCollide)
+local function clearPhaseConnections()
+    for _, connection in ipairs(phaseConnections) do
+        connection:Disconnect()
+    end
+
+    table.clear(phaseConnections)
+end
+
+local function trackPhasePart(part)
+    if not part or not part:IsA("BasePart") then
+        return
+    end
+
+    phaseParts[part] = true
+
+    if originalCollision[part] == nil then
+        originalCollision[part] = part.CanCollide
+    end
+
+    if LocalPlayerSettings.PhaseEnabled == true then
+        part.CanCollide = false
+    end
+end
+
+local function rebuildPhaseParts(character)
+    table.clear(phaseParts)
+
     if not character then
         return
     end
 
     for _, descendant in ipairs(character:GetDescendants()) do
-        if descendant:IsA("BasePart") then
-            if originalCollision[descendant] == nil then
-                originalCollision[descendant] = descendant.CanCollide
-            end
-
-            descendant.CanCollide = canCollide
-        end
+        trackPhasePart(descendant)
     end
 end
 
+local function hookPhaseCharacter(character)
+    clearPhaseConnections()
+    rebuildPhaseParts(character)
+
+    if not character then
+        return
+    end
+
+    table.insert(phaseConnections, character.DescendantAdded:Connect(trackPhasePart))
+    table.insert(phaseConnections, character.DescendantRemoving:Connect(function(descendant)
+        phaseParts[descendant] = nil
+    end))
+end
+
 local function applyPhase()
-    local character = getCharacter()
     if LocalPlayerSettings.PhaseEnabled == true then
-        setCharacterCollision(character, false)
+        for part in pairs(phaseParts) do
+            if part and part.Parent then
+                trackPhasePart(part)
+            else
+                phaseParts[part] = nil
+            end
+        end
+
         return
     end
 
@@ -183,7 +258,12 @@ end
 
 RunService.Heartbeat:Connect(function()
     applyWalkSpeed()
-    applyPhase()
+
+    local phaseEnabled = LocalPlayerSettings.PhaseEnabled == true
+    if phaseEnabled ~= lastPhaseEnabled then
+        lastPhaseEnabled = phaseEnabled
+        applyPhase()
+    end
 end)
 
 RunService.RenderStepped:Connect(function()
@@ -193,11 +273,15 @@ end)
 LocalPlayer.CharacterAdded:Connect(function(character)
     character:WaitForChild("Humanoid", 5)
     character:WaitForChild("HumanoidRootPart", 5)
+    hookPhaseCharacter(character)
+
     task.defer(function()
         applyWalkSpeed()
         applyPhase()
         applyFly()
     end)
 end)
+
+hookPhaseCharacter(getCharacter())
 
 return LocalPlayerSettings
