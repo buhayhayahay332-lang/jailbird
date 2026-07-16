@@ -262,13 +262,6 @@ GunModGroup:AddSlider("GunModFireRateMultiplier", {
     end,
 })
 
-GunModGroup:AddToggle("GunModVerbose", {
-    Text     = "Verbose Logging",
-    Default  = GunModSettings.Verbose,
-    Callback = function(v)
-        GunModSettings.Verbose = v
-    end,
-})
 
 -- LOCAL PLAYER TAB
 
