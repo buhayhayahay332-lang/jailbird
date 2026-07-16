@@ -54,6 +54,7 @@ local Tabs = {
     SilentAim   = Window:AddTab("Silent Aim", "crosshair"),
     Visuals     = Window:AddTab("Visuals",    "eye"),
     GunMod      = Window:AddTab("Gun Mod",    "sliders-horizontal"),
+    Skins      = Window:AddTab("Skins", "palette")
     LocalPlayer = Window:AddTab("Local Player", "user"),
     Settings    = Window:AddTab("Settings",   "settings"),
 }
@@ -296,7 +297,6 @@ FlyGroup:AddSlider("LPFlySpeed", {
 
 -- SKINS TAB
 
-Tabs.Skins = Window:AddTab("Skins", "palette")
 
 local SkinGroup = Tabs.Skins:AddLeftGroupbox("Weapon Skin", "cog")
 
