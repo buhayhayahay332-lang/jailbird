@@ -51,11 +51,12 @@ local Window = Library:CreateWindow({
 -- TABS
 
 local Tabs = {
-    SilentAim = Window:AddTab("Silent Aim", "crosshair"),
-    GunMod    = Window:AddTab("Gun Mod",    "sliders-horizontal"),
+    SilentAim   = Window:AddTab("Silent Aim", "crosshair"),
+    Visuals     = Window:AddTab("Visuals",    "eye"),
+    GunMod      = Window:AddTab("Gun Mod",    "sliders-horizontal"),
     LocalPlayer = Window:AddTab("Local Player", "user"),
-    Visuals   = Window:AddTab("Visuals",    "eye"),
-    Settings  = Window:AddTab("Settings",   "settings"),
+    Skins       = Window:AddTab("Skins",      "paintbrush"),  -- ADD
+    Settings    = Window:AddTab("Settings",   "settings"),
 }
 
 -- SILENT AIM TAB
