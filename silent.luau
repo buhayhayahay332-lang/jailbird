@@ -463,7 +463,12 @@ table.insert(RuntimeState.Connections, UserInputService.InputBegan:Connect(funct
     local toggleKey = getToggleKeyCode()
     if toggleKey and input.KeyCode == toggleKey then
         SilentAimSettings.Enabled = not SilentAimSettings.Enabled
-        syncVisualState()
+        local Toggles = Global.Toggles or (Library and Library.Toggles)
+        if Toggles and Toggles.SAEnabled then
+            Toggles.SAEnabled:SetValue(SilentAimSettings.Enabled)
+        else
+            syncVisualState()
+        end
     end
 end))
 
@@ -494,6 +499,7 @@ coroutine.resume(coroutine.create(function()
         if isFovVisible() then 
             fov_circle.Visible = true
             fov_circle.Position = getMousePosition()
+            fov_circle.Radius = SilentAimSettings.FOVRadius
         else
             fov_circle.Visible = false
         end

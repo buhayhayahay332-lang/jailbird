@@ -6,7 +6,7 @@ loadstring(game:HttpGet(base .. "local_player.luau"))()
 loadstring(game:HttpGet(base .. "silent.luau"))()
 loadstring(game:HttpGet(base .. "unlock_all.luau"))()
 
-local SkinSettings = getgenv().SkinSettings
+local SkinSettings = getgenv().SkinSettings 
 local SilentAimSettings = getgenv().SilentAimSettings
 local GunModSettings = getgenv().GunModSettings
 local LocalPlayerSettings = getgenv().LocalPlayerSettings
@@ -23,6 +23,10 @@ local replicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
 
 local weaponSkinList = {}
 local attachSkinList = {}
+local sightList = { "None" }
+local gripList = { "None" }
+local muzzleList = { "None" }
+local extraList = { "None" }
 
 for _, skin in ipairs(replicatedStorage.Items.Skin:GetChildren()) do
     table.insert(weaponSkinList, skin.Name)
@@ -32,8 +36,33 @@ for _, skin in ipairs(replicatedStorage.Items.AttachmentSkin:GetChildren()) do
     table.insert(attachSkinList, skin.Name)
 end
 
+if replicatedStorage.Items:FindFirstChild("Sight") then
+    for _, item in ipairs(replicatedStorage.Items.Sight:GetChildren()) do
+        table.insert(sightList, item.Name)
+    end
+end
+if replicatedStorage.Items:FindFirstChild("Grip") then
+    for _, item in ipairs(replicatedStorage.Items.Grip:GetChildren()) do
+        table.insert(gripList, item.Name)
+    end
+end
+if replicatedStorage.Items:FindFirstChild("Muzzle") then
+    for _, item in ipairs(replicatedStorage.Items.Muzzle:GetChildren()) do
+        table.insert(muzzleList, item.Name)
+    end
+end
+if replicatedStorage.Items:FindFirstChild("Extra") then
+    for _, item in ipairs(replicatedStorage.Items.Extra:GetChildren()) do
+        table.insert(extraList, item.Name)
+    end
+end
+
 table.sort(weaponSkinList)
 table.sort(attachSkinList)
+table.sort(sightList)
+table.sort(gripList)
+table.sort(muzzleList)
+table.sort(extraList)
 
 local Options = Library.Options
 local Toggles = Library.Toggles
@@ -305,6 +334,9 @@ SkinGroup:AddToggle("SkinEnabled", {
     Default  = SkinSettings.Enabled,
     Callback = function(v)
         SkinSettings.Enabled = v
+        if SkinSettings.ApplyToCharacter then
+            pcall(SkinSettings.ApplyToCharacter)
+        end
     end,
 })
 
@@ -317,6 +349,9 @@ SkinGroup:AddDropdown("WeaponSkinDropdown", {
     Callback = function(v)
         SkinSettings.WeaponSkin = v
         Library:Notify({ Title = "Skins", Description = "Weapon skin set to: " .. v, Time = 2 })
+        if SkinSettings.ApplyToCharacter then
+            pcall(SkinSettings.ApplyToCharacter)
+        end
     end,
 })
 
@@ -359,6 +394,70 @@ AttachGroup:AddDropdown("AttachSkinDropdown", {
     Callback = function(v)
         SkinSettings.AttachmentSkin = v
         Library:Notify({ Title = "Skins", Description = "Attachment skin set to: " .. v, Time = 2 })
+        if SkinSettings.ApplyToCharacter then
+            pcall(SkinSettings.ApplyToCharacter)
+        end
+    end,
+})
+
+local AttachmentGroup = Tabs.Skins:AddRightGroupbox("Physical Attachments", "wrench")
+
+AttachmentGroup:AddToggle("AttachmentsEnabled", {
+    Text     = "Enable Attachments",
+    Default  = SkinSettings.AttachmentsEnabled,
+    Callback = function(v)
+        SkinSettings.AttachmentsEnabled = v
+        if SkinSettings.ApplyToCharacter then
+            pcall(SkinSettings.ApplyToCharacter)
+        end
+    end,
+})
+
+AttachmentGroup:AddDropdown("SightDropdown", {
+    Text     = "Sight",
+    Values   = sightList,
+    Default  = SkinSettings.Attachments.Sight ~= "" and SkinSettings.Attachments.Sight or "None",
+    Callback = function(v)
+        SkinSettings.Attachments.Sight = v == "None" and "" or v
+        if SkinSettings.ApplyToCharacter then
+            pcall(SkinSettings.ApplyToCharacter)
+        end
+    end,
+})
+
+AttachmentGroup:AddDropdown("GripDropdown", {
+    Text     = "Grip",
+    Values   = gripList,
+    Default  = SkinSettings.Attachments.Grip ~= "" and SkinSettings.Attachments.Grip or "None",
+    Callback = function(v)
+        SkinSettings.Attachments.Grip = v == "None" and "" or v
+        if SkinSettings.ApplyToCharacter then
+            pcall(SkinSettings.ApplyToCharacter)
+        end
+    end,
+})
+
+AttachmentGroup:AddDropdown("MuzzleDropdown", {
+    Text     = "Muzzle",
+    Values   = muzzleList,
+    Default  = SkinSettings.Attachments.Muzzle ~= "" and SkinSettings.Attachments.Muzzle or "None",
+    Callback = function(v)
+        SkinSettings.Attachments.Muzzle = v == "None" and "" or v
+        if SkinSettings.ApplyToCharacter then
+            pcall(SkinSettings.ApplyToCharacter)
+        end
+    end,
+})
+
+AttachmentGroup:AddDropdown("ExtraDropdown", {
+    Text     = "Extra",
+    Values   = extraList,
+    Default  = SkinSettings.Attachments.Extra ~= "" and SkinSettings.Attachments.Extra or "None",
+    Callback = function(v)
+        SkinSettings.Attachments.Extra = v == "None" and "" or v
+        if SkinSettings.ApplyToCharacter then
+            pcall(SkinSettings.ApplyToCharacter)
+        end
     end,
 })
 
