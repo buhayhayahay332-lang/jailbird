@@ -4,7 +4,9 @@ local ESP = loadstring(game:HttpGet(base .. "c_esp.luau"))()
 loadstring(game:HttpGet(base .. "gun_mod.luau"))()
 loadstring(game:HttpGet(base .. "local_player.luau"))()
 loadstring(game:HttpGet(base .. "silent.luau"))()
+loadstring(game:HttpGet(base .. "unlock_all.luau"))()
 
+local SkinSettings = getgenv().SkinSettings
 local SilentAimSettings = getgenv().SilentAimSettings
 local GunModSettings = getgenv().GunModSettings
 local LocalPlayerSettings = getgenv().LocalPlayerSettings
@@ -15,6 +17,23 @@ local repo         = "https://raw.githubusercontent.com/deividcomsono/Obsidian/m
 local Library      = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager  = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+
+
+local replicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+
+local weaponSkinList = {}
+local attachSkinList = {}
+
+for _, skin in ipairs(replicatedStorage.Items.Skin:GetChildren()) do
+    table.insert(weaponSkinList, skin.Name)
+end
+
+for _, skin in ipairs(replicatedStorage.Items.AttachmentSkin:GetChildren()) do
+    table.insert(attachSkinList, skin.Name)
+end
+
+table.sort(weaponSkinList)
+table.sort(attachSkinList)
 
 local Options = Library.Options
 local Toggles = Library.Toggles
@@ -272,6 +291,74 @@ FlyGroup:AddSlider("LPFlySpeed", {
     Rounding = 0,
     Callback = function(v)
         LocalPlayerSettings.FlySpeed = v
+    end,
+})
+
+-- SKINS TAB
+
+Tabs.Skins = Window:AddTab("Skins", "palette")
+
+local SkinGroup = Tabs.Skins:AddLeftGroupbox("Weapon Skin", "cog")
+
+SkinGroup:AddToggle("SkinEnabled", {
+    Text     = "Enable Skin Changer",
+    Default  = SkinSettings.Enabled,
+    Callback = function(v)
+        SkinSettings.Enabled = v
+    end,
+})
+
+SkinGroup:AddDivider()
+
+SkinGroup:AddDropdown("WeaponSkinDropdown", {
+    Text     = "Weapon Skin",
+    Values   = weaponSkinList,
+    Default  = SkinSettings.WeaponSkin,
+    Callback = function(v)
+        SkinSettings.WeaponSkin = v
+        Library:Notify({ Title = "Skins", Description = "Weapon skin set to: " .. v, Time = 2 })
+    end,
+})
+
+SkinGroup:AddDivider()
+
+SkinGroup:AddButton({
+    Text = "Apply Now",
+    Func = function()
+        local localPlayer = game:GetService("Players").LocalPlayer
+        local ok, componentsWeapon = pcall(require, replicatedStorage.Components.Weapon)
+        if not ok or not componentsWeapon then
+            Library:Notify({ Title = "Skins", Description = "Failed to apply skin!", Time = 2 })
+            return
+        end
+
+        local character = localPlayer.Character
+        if not character then return end
+
+        for _, tool in ipairs(character:GetChildren()) do
+            if tool:IsA("Tool") then
+                for _, child in ipairs(tool:GetChildren()) do
+                    if child:IsA("Model") then
+                        pcall(componentsWeapon.SetSkinOnWep, child, SkinSettings.WeaponSkin)
+                    end
+                end
+            end
+        end
+
+        Library:Notify({ Title = "Skins", Description = "Skin applied!", Time = 2 })
+    end,
+    Tooltip = "Force apply skin to current weapon",
+})
+
+local AttachGroup = Tabs.Skins:AddRightGroupbox("Attachment Skin", "layers")
+
+AttachGroup:AddDropdown("AttachSkinDropdown", {
+    Text     = "Attachment Skin",
+    Values   = attachSkinList,
+    Default  = SkinSettings.AttachmentSkin,
+    Callback = function(v)
+        SkinSettings.AttachmentSkin = v
+        Library:Notify({ Title = "Skins", Description = "Attachment skin set to: " .. v, Time = 2 })
     end,
 })
 
