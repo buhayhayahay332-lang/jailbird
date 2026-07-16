@@ -55,7 +55,6 @@ local Tabs = {
     Visuals     = Window:AddTab("Visuals",    "eye"),
     GunMod      = Window:AddTab("Gun Mod",    "sliders-horizontal"),
     LocalPlayer = Window:AddTab("Local Player", "user"),
-    Skins       = Window:AddTab("Skins",      "paintbrush"),  -- ADD
     Settings    = Window:AddTab("Settings",   "settings"),
 }
 
