@@ -54,7 +54,7 @@ local Tabs = {
     SilentAim   = Window:AddTab("Silent Aim", "crosshair"),
     Visuals     = Window:AddTab("Visuals",    "eye"),
     GunMod      = Window:AddTab("Gun Mod",    "sliders-horizontal"),
-    Skins      = Window:AddTab("Skins", "cog")
+    Skins      = Window:AddTab("Skins", "cog"),
     LocalPlayer = Window:AddTab("Local Player", "user"),
     Settings    = Window:AddTab("Settings",   "settings"),
 }
