@@ -124,7 +124,6 @@ local function hookModules()
     end
 
     RuntimeState.Hooked = true
-    print("[SkinChanger] Hooked — Weapon: " .. SkinSettings.WeaponSkin .. " | Attachment: " .. SkinSettings.AttachmentSkin)
 end
 
 hookModules()
