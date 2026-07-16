@@ -6,7 +6,19 @@ loadstring(game:HttpGet(base .. "local_player.luau"))()
 loadstring(game:HttpGet(base .. "silent.luau"))()
 loadstring(game:HttpGet(base .. "unlock_all.luau"))()
 
-local SkinSettings = getgenv().SkinSettings 
+local SkinSettings = getgenv().SkinSettings or {
+    Enabled = false,
+    WeaponSkin = "Crystalline",
+    AttachmentSkin = "Gold",
+    AttachmentsEnabled = true,
+    Attachments = {
+        Sight  = "ACOG",
+        Grip   = "Vertical Grip",
+        Muzzle = "Silencer",
+        Extra  = "",
+    },
+}
+getgenv().SkinSettings = SkinSettings
 local SilentAimSettings = getgenv().SilentAimSettings
 local GunModSettings = getgenv().GunModSettings
 local LocalPlayerSettings = getgenv().LocalPlayerSettings
@@ -15,6 +27,7 @@ local AimAssistSettings = getgenv().AimAssistSettings
 
 local repo         = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library      = loadstring(game:HttpGet(repo .. "Library.lua"))()
+getgenv().Library = Library
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
 local SaveManager  = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 

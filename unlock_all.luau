@@ -179,7 +179,6 @@ local function hookModules()
         if Global.__unlock_state ~= RuntimeState then
             return RuntimeState.OriginalSetFullAttach(weaponModel, player)
         end
-        -- Just call through; hook #3 intercepts each SetAttachmentOnWep call
         return RuntimeState.OriginalSetFullAttach(weaponModel, player)
     end
 
