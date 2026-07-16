@@ -3,7 +3,7 @@ if not game:IsLoaded() then
 end
 
 local SkinSettings = {
-    Enabled = true,
+    Enabled = false,
     WeaponSkin = "Crystalline",
     AttachmentSkin = "Gold"
 }
