@@ -5,24 +5,38 @@ end
 local Settings = {
     Enabled             = false,
     WeaponSkin          = "Crystalline",
-    AttachmentSkin        = "Gold",
-    AttachmentsEnabled = false,
+    AttachmentSkin      = "Gold",
+    AttachmentsEnabled  = false,
     Attachments = {
-        Sight  = "Compact",          
+        Sight  = "Compact",
         Grip   = "Vertical Grip",
-        Muzzle = "Silencer",     
-        Extra  = "",              
+        Muzzle = "Silencer",
+        Charm  = "",
+        Extra  = "",
     },
+    KnifeEnabled = false,
+    Knife        = "Bayonet",
 }
 
 if getgenv().SkinSettings then
-    Settings.Enabled = getgenv().SkinSettings.Enabled
-    Settings.WeaponSkin = getgenv().SkinSettings.WeaponSkin
-    Settings.AttachmentSkin = getgenv().SkinSettings.AttachmentSkin
+    local prev = getgenv().SkinSettings
+    Settings.Enabled            = prev.Enabled
+    Settings.WeaponSkin         = prev.WeaponSkin
+    Settings.AttachmentSkin     = prev.AttachmentSkin
+    Settings.AttachmentsEnabled = prev.AttachmentsEnabled
+    Settings.KnifeEnabled       = prev.KnifeEnabled
+    Settings.Knife              = prev.Knife
+    if prev.Attachments then
+        Settings.Attachments.Sight  = prev.Attachments.Sight
+        Settings.Attachments.Grip   = prev.Attachments.Grip
+        Settings.Attachments.Muzzle = prev.Attachments.Muzzle
+        Settings.Attachments.Charm  = prev.Attachments.Charm or ""
+        Settings.Attachments.Extra  = prev.Attachments.Extra
+    end
 end
 
 local Global = getgenv()
-Global.SkinSettings = Settings
+Global.SkinSettings   = Settings
 Global.UnlockSettings = Settings
 
 if Global.__unlock_cleanup then
@@ -48,33 +62,37 @@ Global.__unlock_cleanup = function()
     local RS = game:GetService("ReplicatedStorage")
     local ok, cw = pcall(require, RS.Components.Weapon)
     if ok and cw then
-        if RuntimeState.OriginalSetSkinOnWep   then cw.SetSkinOnWep          = RuntimeState.OriginalSetSkinOnWep   end
-        if RuntimeState.OriginalSetAttachSkins then cw.SetAttachmentSkins     = RuntimeState.OriginalSetAttachSkins end
-        if RuntimeState.OriginalSetFullAttach  then cw.SetFullAttachmentOnWeapon = RuntimeState.OriginalSetFullAttach end
-        if RuntimeState.OriginalSetAttachOnWep then cw.SetAttachmentOnWep     = RuntimeState.OriginalSetAttachOnWep end
+        if RuntimeState.OriginalSetSkinOnWep   then cw.SetSkinOnWep               = RuntimeState.OriginalSetSkinOnWep   end
+        if RuntimeState.OriginalSetAttachSkins then cw.SetAttachmentSkins          = RuntimeState.OriginalSetAttachSkins end
+        if RuntimeState.OriginalSetFullAttach  then cw.SetFullAttachmentOnWeapon   = RuntimeState.OriginalSetFullAttach  end
+        if RuntimeState.OriginalSetAttachOnWep then cw.SetAttachmentOnWep          = RuntimeState.OriginalSetAttachOnWep end
     end
 
     RuntimeState.Hooked = false
 end
 
-local Players          = game:GetService("Players")
+local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LocalPlayer      = Players.LocalPlayer
+local LocalPlayer       = Players.LocalPlayer
+
+
+local function safeRawGet(t, k)
+    if type(t) ~= "table" then return nil end
+    local ok, v = pcall(rawget, t, k)
+    return ok and v or nil
+end
 
 local function resolveAttachment(slot)
     local name = Settings.Attachments[slot]
     if not name or name == "" then return "" end
-
     local folder = ReplicatedStorage.Items:FindFirstChild(slot)
     if folder and folder:FindFirstChild(name) then
         return name
     end
-
     if folder then
         local first = folder:GetChildren()[1]
         if first then return first.Name end
     end
-
     return ""
 end
 
@@ -95,6 +113,109 @@ local function applyAttachmentSkin(model)
     end)
 end
 
+
+local function getWeaponDataControllers()
+    local results = {}
+    if type(getgc) ~= "function" then return results end
+
+    local ok, objects = pcall(getgc, true)
+    if not ok or type(objects) ~= "table" then return results end
+
+    for _, obj in ipairs(objects) do
+        if type(obj) == "table" then
+            local tools = safeRawGet(obj, "Tools")
+            if type(tools) == "table" then
+                -- Verify it looks like a WeaponDataNew controller
+                if safeRawGet(tools, "Primary") or safeRawGet(tools, "Secondary") or safeRawGet(tools, "Knife") then
+                    table.insert(results, obj)
+                end
+            end
+        end
+    end
+
+    return results
+end
+
+local function applyToWeaponModel(model)
+    if not model or not model.Parent then return end
+    local ok, cw = pcall(require, ReplicatedStorage.Components.Weapon)
+    if not ok or not cw then return end
+
+    if Settings.Enabled then
+        if RuntimeState.OriginalSetSkinOnWep then
+            pcall(RuntimeState.OriginalSetSkinOnWep, model, Settings.WeaponSkin)
+        end
+        applyAttachmentSkin(model)
+    end
+
+    if Settings.AttachmentsEnabled then
+        if cw.SetFullAttachmentOnWeapon then
+            pcall(cw.SetFullAttachmentOnWeapon, model, LocalPlayer)
+        end
+    end
+end
+
+local function applyKnifeToController(controller)
+    if not Settings.KnifeEnabled then return end
+
+    local knifeName = Settings.Knife
+    local knifeFolder = ReplicatedStorage.Items:FindFirstChild("Knife")
+    if not knifeFolder then return end
+    if not knifeFolder:FindFirstChild(knifeName) then return end
+
+    local tools = safeRawGet(controller, "Tools")
+    if not tools then return end
+
+    local knifeTool = safeRawGet(tools, "Knife")
+    if not knifeTool then return end
+
+    local ok, cw = pcall(require, ReplicatedStorage.Components.Weapon)
+    if not ok or not cw then return end
+
+    pcall(function()
+        local oldModel = safeRawGet(knifeTool, "Model")
+        if oldModel then
+            oldModel:Destroy()
+        end
+
+        local newModel = knifeFolder:FindFirstChild(knifeName):Clone()
+        if cw.WeldWeapon then
+            cw.WeldWeapon(newModel)
+        end
+        if cw.SetModelProperties then
+            cw.SetModelProperties(newModel, false, false)
+        end
+
+        local parent = oldModel and oldModel.Parent or (controller.CameraModel or workspace.CurrentCamera)
+        newModel.Parent = parent or workspace.CurrentCamera
+        knifeTool.Model = newModel
+    end)
+end
+
+local function applyLive()
+    local ok, cw = pcall(require, ReplicatedStorage.Components.Weapon)
+    if not ok or not cw then return end
+
+    local controllers = getWeaponDataControllers()
+
+    for _, controller in ipairs(controllers) do
+        local tools = safeRawGet(controller, "Tools")
+        if not tools then continue end
+
+        for _, slot in ipairs({"Primary", "Secondary"}) do
+            local toolData = safeRawGet(tools, slot)
+            if toolData then
+                local model = safeRawGet(toolData, "Model")
+                if model and model.Parent then
+                    applyToWeaponModel(model)
+                end
+            end
+        end
+
+        applyKnifeToController(controller)
+    end
+end
+
 local function applyToCharacter(character)
     if not character then return end
     local ok, cw = pcall(require, ReplicatedStorage.Components.Weapon)
@@ -104,13 +225,10 @@ local function applyToCharacter(character)
         if tool:IsA("Tool") then
             for _, child in ipairs(tool:GetChildren()) do
                 if child:IsA("Model") then
-                    -- Weapon body skin
                     if Settings.Enabled and RuntimeState.OriginalSetSkinOnWep then
                         pcall(RuntimeState.OriginalSetSkinOnWep, child, Settings.WeaponSkin)
                     end
-                    -- Attachment skins
                     applyAttachmentSkin(child)
-                    -- Physical attachments
                     if Settings.AttachmentsEnabled and cw.SetFullAttachmentOnWeapon then
                         pcall(cw.SetFullAttachmentOnWeapon, child, LocalPlayer)
                     end
@@ -121,6 +239,7 @@ local function applyToCharacter(character)
 end
 
 Settings.ApplyToCharacter = function()
+    applyLive()
     applyToCharacter(LocalPlayer.Character)
 end
 
@@ -165,12 +284,10 @@ local function hookModules()
         if not Settings.AttachmentsEnabled then
             return RuntimeState.OriginalSetAttachOnWep(weaponModel, slotName, attachmentName, player)
         end
-
         local override = resolveAttachment(slotName)
         if override ~= "" then
             return RuntimeState.OriginalSetAttachOnWep(weaponModel, slotName, override, player)
         else
-            -- Slot disabled in Settings (left as ""), keep original behaviour
             return RuntimeState.OriginalSetAttachOnWep(weaponModel, slotName, attachmentName, player)
         end
     end
@@ -187,9 +304,10 @@ end
 
 hookModules()
 
-local character = LocalPlayer.Character
-if character then
-    applyToCharacter(character)
+applyLive()
+
+if LocalPlayer.Character then
+    applyToCharacter(LocalPlayer.Character)
 end
 
 table.insert(RuntimeState.Connections,
@@ -197,6 +315,6 @@ table.insert(RuntimeState.Connections,
         if Global.__unlock_state ~= RuntimeState then return end
         task.wait(2)
         applyToCharacter(newChar)
+        applyLive()
     end)
 )
-

@@ -12,11 +12,14 @@ local SkinSettings = getgenv().SkinSettings or {
     AttachmentSkin = "Gold",
     AttachmentsEnabled = true,
     Attachments = {
-        Sight  = "ACOG",
+        Sight  = "Compact",
         Grip   = "Vertical Grip",
         Muzzle = "Silencer",
+        Charm  = "",
         Extra  = "",
     },
+    KnifeEnabled = false,
+    Knife = "Bayonet",
 }
 getgenv().SkinSettings = SkinSettings
 local SilentAimSettings = getgenv().SilentAimSettings
@@ -36,10 +39,12 @@ local replicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
 
 local weaponSkinList = {}
 local attachSkinList = {}
-local sightList = { "None" }
-local gripList = { "None" }
-local muzzleList = { "None" }
-local extraList = { "None" }
+local sightList   = { "None" }
+local gripList    = { "None" }
+local muzzleList  = { "None" }
+local charmList   = { "None" }
+local extraList   = { "None" }
+local knifeList   = {}
 
 for _, skin in ipairs(replicatedStorage.Items.Skin:GetChildren()) do
     table.insert(weaponSkinList, skin.Name)
@@ -64,9 +69,19 @@ if replicatedStorage.Items:FindFirstChild("Muzzle") then
         table.insert(muzzleList, item.Name)
     end
 end
+if replicatedStorage.Items:FindFirstChild("Charm") then
+    for _, item in ipairs(replicatedStorage.Items.Charm:GetChildren()) do
+        table.insert(charmList, item.Name)
+    end
+end
 if replicatedStorage.Items:FindFirstChild("Extra") then
     for _, item in ipairs(replicatedStorage.Items.Extra:GetChildren()) do
         table.insert(extraList, item.Name)
+    end
+end
+if replicatedStorage.Items:FindFirstChild("Knife") then
+    for _, item in ipairs(replicatedStorage.Items.Knife:GetChildren()) do
+        table.insert(knifeList, item.Name)
     end
 end
 
@@ -75,7 +90,9 @@ table.sort(attachSkinList)
 table.sort(sightList)
 table.sort(gripList)
 table.sort(muzzleList)
+table.sort(charmList)
 table.sort(extraList)
+table.sort(knifeList)
 
 local Options = Library.Options
 local Toggles = Library.Toggles
@@ -461,6 +478,43 @@ AttachmentGroup:AddDropdown("ExtraDropdown", {
     Default  = SkinSettings.Attachments.Extra ~= "" and SkinSettings.Attachments.Extra or "None",
     Callback = function(v)
         SkinSettings.Attachments.Extra = v == "None" and "" or v
+        if SkinSettings.ApplyToCharacter then
+            pcall(SkinSettings.ApplyToCharacter)
+        end
+    end,
+})
+
+AttachmentGroup:AddDropdown("CharmDropdown", {
+    Text     = "Charm",
+    Values   = charmList,
+    Default  = (SkinSettings.Attachments.Charm and SkinSettings.Attachments.Charm ~= "") and SkinSettings.Attachments.Charm or "None",
+    Callback = function(v)
+        SkinSettings.Attachments.Charm = v == "None" and "" or v
+        if SkinSettings.ApplyToCharacter then
+            pcall(SkinSettings.ApplyToCharacter)
+        end
+    end,
+})
+
+local KnifeGroup = Tabs.Skins:AddRightGroupbox("Knife", "scissors")
+
+KnifeGroup:AddToggle("KnifeEnabled", {
+    Text     = "Enable Knife Changer",
+    Default  = SkinSettings.KnifeEnabled,
+    Callback = function(v)
+        SkinSettings.KnifeEnabled = v
+        if SkinSettings.ApplyToCharacter then
+            pcall(SkinSettings.ApplyToCharacter)
+        end
+    end,
+})
+
+KnifeGroup:AddDropdown("KnifeDropdown", {
+    Text     = "Knife",
+    Values   = knifeList,
+    Default  = SkinSettings.Knife,
+    Callback = function(v)
+        SkinSettings.Knife = v
         if SkinSettings.ApplyToCharacter then
             pcall(SkinSettings.ApplyToCharacter)
         end
