@@ -95,15 +95,19 @@ local function resolveAttachment(slot)
     return ""
 end
 
--- FIXED: removed GetAttribute("Type") check, apply to all MeshPart descendants
+
 local function applyAttachmentSkin(model)
     if not Settings.Enabled then return end
     local skinObj = ReplicatedStorage.Items.AttachmentSkin:FindFirstChild(Settings.AttachmentSkin)
     if not skinObj then return end
     pcall(function()
-        for _, descendant in ipairs(model:GetDescendants()) do
-            if descendant:IsA("MeshPart") then
-                descendant.TextureID = skinObj.Texture
+        for _, child in ipairs(model:GetChildren()) do
+            if child:IsA("Model") then  
+                for _, part in ipairs(child:GetDescendants()) do
+                    if part:IsA("MeshPart") then
+                        part.TextureID = skinObj.Texture
+                    end
+                end
             end
         end
     end)
