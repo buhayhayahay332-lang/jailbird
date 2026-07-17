@@ -8,7 +8,7 @@ local Settings = {
     AttachmentSkin      = "Gold",
     AttachmentsEnabled  = true,
     Attachments = {
-        Sight  = "Compact",
+        Sight  = "ACOG",
         Grip   = "Vertical Grip",
         Muzzle = "Silencer",
         Charm  = "",
@@ -102,7 +102,6 @@ local function applyAttachmentSkin(model)
     if not skinObj then return end
     pcall(function()
         for _, child in ipairs(model:GetChildren()) do
-            -- Apply to any submodel (which represents attachments)
             if child:IsA("Model") then
                 for _, part in ipairs(child:GetDescendants()) do
                     if part:IsA("MeshPart") then
@@ -193,28 +192,35 @@ local function applyKnifeToController(controller)
         local oldModel = safeRawGet(knifeTool, "Model")
         local newModel = knifeTemplate:Clone()
 
-        local animsCopied = copyAnimations(oldModel, newModel)
-        
-        if not animsCopied then
-            local origModel = knifeFolder:FindFirstChild(knifeTool.Tool.Name)
-            animsCopied = copyAnimations(origModel, newModel)
-        end
+        local hasAnims = newModel:FindFirstChild("Animations") or newModel:FindFirstChild("Animations", true)
+        local animsCopied = false
 
-        if not animsCopied then
-            local weaponsFolder = ReplicatedStorage:FindFirstChild("Weapons")
-            local weaponTemplate = weaponsFolder and weaponsFolder:FindFirstChild(knifeTool.Tool.Name)
-            animsCopied = copyAnimations(weaponTemplate, newModel)
-        end
+        if hasAnims then
+            animsCopied = true
+        else
+            animsCopied = copyAnimations(oldModel, newModel)
+            
+            if not animsCopied then
+                local origModel = knifeFolder:FindFirstChild(knifeTool.Tool.Name)
+                animsCopied = copyAnimations(origModel, newModel)
+            end
 
-        if not animsCopied then
-            local bayonetModel = knifeFolder:FindFirstChild("Bayonet")
-            animsCopied = copyAnimations(bayonetModel, newModel)
-        end
+            if not animsCopied then
+                local weaponsFolder = ReplicatedStorage:FindFirstChild("Weapons")
+                local weaponTemplate = weaponsFolder and weaponsFolder:FindFirstChild(knifeTool.Tool.Name)
+                animsCopied = copyAnimations(weaponTemplate, newModel)
+            end
 
-        if not animsCopied then
-            local weaponsFolder = ReplicatedStorage:FindFirstChild("Weapons")
-            local bayonetTemplate = weaponsFolder and weaponsFolder:FindFirstChild("Bayonet")
-            animsCopied = copyAnimations(bayonetTemplate, newModel)
+            if not animsCopied then
+                local bayonetModel = knifeFolder:FindFirstChild("Bayonet")
+                animsCopied = copyAnimations(bayonetModel, newModel)
+            end
+
+            if not animsCopied then
+                local weaponsFolder = ReplicatedStorage:FindFirstChild("Weapons")
+                local bayonetTemplate = weaponsFolder and weaponsFolder:FindFirstChild("Bayonet")
+                animsCopied = copyAnimations(bayonetTemplate, newModel)
+            end
         end
 
         if oldModel then
@@ -244,6 +250,7 @@ local function applyLive()
         local tools = safeRawGet(controller, "Tools")
         if not tools then continue end
 
+        -- Primary & Secondary weapons
         for _, slot in ipairs({"Primary", "Secondary"}) do
             local toolData = safeRawGet(tools, slot)
             if toolData then
