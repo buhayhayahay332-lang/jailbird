@@ -153,7 +153,6 @@ local function applyToWeaponModel(model)
     end
 end
 
--- FIXED: never destroy/replace the model, just swap TextureID + MeshId visually
 local function applyKnifeToController(controller)
     if not Settings.KnifeEnabled then return end
 
@@ -174,7 +173,6 @@ local function applyKnifeToController(controller)
     if not currentModel or not currentModel.Parent then return end
 
     pcall(function()
-        -- build lookup of source parts by name
         local sourceParts = {}
         for _, desc in ipairs(sourceKnife:GetDescendants()) do
             if desc:IsA("MeshPart") then
@@ -182,7 +180,6 @@ local function applyKnifeToController(controller)
             end
         end
 
-        -- swap visuals only on existing model, animation system stays untouched
         for _, desc in ipairs(currentModel:GetDescendants()) do
             if desc:IsA("MeshPart") then
                 local src = sourceParts[desc.Name]
