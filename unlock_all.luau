@@ -62,10 +62,10 @@ Global.__unlock_cleanup = function()
     local RS = game:GetService("ReplicatedStorage")
     local ok, cw = pcall(require, RS.Components.Weapon)
     if ok and cw then
-        if RuntimeState.OriginalSetSkinOnWep   then cw.SetSkinOnWep               = RuntimeState.OriginalSetSkinOnWep   end
-        if RuntimeState.OriginalSetAttachSkins then cw.SetAttachmentSkins          = RuntimeState.OriginalSetAttachSkins end
-        if RuntimeState.OriginalSetFullAttach  then cw.SetFullAttachmentOnWeapon   = RuntimeState.OriginalSetFullAttach  end
-        if RuntimeState.OriginalSetAttachOnWep then cw.SetAttachmentOnWep          = RuntimeState.OriginalSetAttachOnWep end
+        if RuntimeState.OriginalSetSkinOnWep   then cw.SetSkinOnWep             = RuntimeState.OriginalSetSkinOnWep   end
+        if RuntimeState.OriginalSetAttachSkins then cw.SetAttachmentSkins        = RuntimeState.OriginalSetAttachSkins end
+        if RuntimeState.OriginalSetFullAttach  then cw.SetFullAttachmentOnWeapon = RuntimeState.OriginalSetFullAttach  end
+        if RuntimeState.OriginalSetAttachOnWep then cw.SetAttachmentOnWep        = RuntimeState.OriginalSetAttachOnWep end
     end
 
     RuntimeState.Hooked = false
@@ -74,7 +74,6 @@ end
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer       = Players.LocalPlayer
-
 
 local function safeRawGet(t, k)
     if type(t) ~= "table" then return nil end
@@ -96,23 +95,19 @@ local function resolveAttachment(slot)
     return ""
 end
 
+-- FIXED: removed GetAttribute("Type") check, apply to all MeshPart descendants
 local function applyAttachmentSkin(model)
     if not Settings.Enabled then return end
     local skinObj = ReplicatedStorage.Items.AttachmentSkin:FindFirstChild(Settings.AttachmentSkin)
     if not skinObj then return end
     pcall(function()
-        for _, child in ipairs(model:GetChildren()) do
-            if child:IsA("Model") and child:GetAttribute("Type") then
-                for _, part in ipairs(child:GetChildren()) do
-                    if part:IsA("MeshPart") then
-                        part.TextureID = skinObj.Texture
-                    end
-                end
+        for _, descendant in ipairs(model:GetDescendants()) do
+            if descendant:IsA("MeshPart") then
+                descendant.TextureID = skinObj.Texture
             end
         end
     end)
 end
-
 
 local function getWeaponDataControllers()
     local results = {}
@@ -125,7 +120,6 @@ local function getWeaponDataControllers()
         if type(obj) == "table" then
             local tools = safeRawGet(obj, "Tools")
             if type(tools) == "table" then
-                -- Verify it looks like a WeaponDataNew controller
                 if safeRawGet(tools, "Primary") or safeRawGet(tools, "Secondary") or safeRawGet(tools, "Knife") then
                     table.insert(results, obj)
                 end
@@ -155,13 +149,16 @@ local function applyToWeaponModel(model)
     end
 end
 
+-- FIXED: never destroy/replace the model, just swap TextureID + MeshId visually
 local function applyKnifeToController(controller)
     if not Settings.KnifeEnabled then return end
 
-    local knifeName = Settings.Knife
+    local knifeName   = Settings.Knife
     local knifeFolder = ReplicatedStorage.Items:FindFirstChild("Knife")
     if not knifeFolder then return end
-    if not knifeFolder:FindFirstChild(knifeName) then return end
+
+    local sourceKnife = knifeFolder:FindFirstChild(knifeName)
+    if not sourceKnife then return end
 
     local tools = safeRawGet(controller, "Tools")
     if not tools then return end
@@ -169,26 +166,28 @@ local function applyKnifeToController(controller)
     local knifeTool = safeRawGet(tools, "Knife")
     if not knifeTool then return end
 
-    local ok, cw = pcall(require, ReplicatedStorage.Components.Weapon)
-    if not ok or not cw then return end
+    local currentModel = safeRawGet(knifeTool, "Model")
+    if not currentModel or not currentModel.Parent then return end
 
     pcall(function()
-        local oldModel = safeRawGet(knifeTool, "Model")
-        if oldModel then
-            oldModel:Destroy()
+        -- build lookup of source parts by name
+        local sourceParts = {}
+        for _, desc in ipairs(sourceKnife:GetDescendants()) do
+            if desc:IsA("MeshPart") then
+                sourceParts[desc.Name] = desc
+            end
         end
 
-        local newModel = knifeFolder:FindFirstChild(knifeName):Clone()
-        if cw.WeldWeapon then
-            cw.WeldWeapon(newModel)
+        -- swap visuals only on existing model, animation system stays untouched
+        for _, desc in ipairs(currentModel:GetDescendants()) do
+            if desc:IsA("MeshPart") then
+                local src = sourceParts[desc.Name]
+                if src then
+                    desc.TextureID = src.TextureID
+                    desc.MeshId    = src.MeshId
+                end
+            end
         end
-        if cw.SetModelProperties then
-            cw.SetModelProperties(newModel, false, false)
-        end
-
-        local parent = oldModel and oldModel.Parent or (controller.CameraModel or workspace.CurrentCamera)
-        newModel.Parent = parent or workspace.CurrentCamera
-        knifeTool.Model = newModel
     end)
 end
 
