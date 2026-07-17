@@ -496,7 +496,7 @@ AttachmentGroup:AddDropdown("CharmDropdown", {
     end,
 })
 
-local KnifeGroup = Tabs.Skins:AddRightGroupbox("Knife", "scissors")
+local KnifeGroup = Tabs.Skins:AddLeftGroupbox("Knife", "scissors")
 
 KnifeGroup:AddToggle("KnifeEnabled", {
     Text     = "Enable Knife Changer",
