@@ -173,19 +173,40 @@ local function applyKnifeToController(controller)
     if not currentModel or not currentModel.Parent then return end
 
     pcall(function()
+        local function getPathKey(root, part)
+            local segments = {}
+            local current  = part
+            while current and current ~= root do
+                local idx = 0
+                for _, sibling in ipairs(current.Parent:GetChildren()) do
+                    if sibling.Name == current.Name then
+                        idx += 1
+                    end
+                    if sibling == current then break end
+                end
+                table.insert(segments, 1, current.Name .. "[" .. idx .. "]")
+                current = current.Parent
+            end
+            return table.concat(segments, "/")
+        end
+
         local sourceParts = {}
         for _, desc in ipairs(sourceKnife:GetDescendants()) do
             if desc:IsA("MeshPart") then
-                sourceParts[desc.Name] = desc
+                sourceParts[getPathKey(sourceKnife, desc)] = desc
             end
         end
 
         for _, desc in ipairs(currentModel:GetDescendants()) do
             if desc:IsA("MeshPart") then
-                local src = sourceParts[desc.Name]
+                local key = getPathKey(currentModel, desc)
+                local src  = sourceParts[key]
                 if src then
                     desc.TextureID = src.TextureID
                     desc.MeshId    = src.MeshId
+                    desc.Color     = src.Color
+                    desc.Material  = src.Material
+                    desc.Size      = src.Size
                 end
             end
         end
