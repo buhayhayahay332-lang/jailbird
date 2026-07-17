@@ -102,7 +102,6 @@ local function applyAttachmentSkin(model)
     if not skinObj then return end
     pcall(function()
         for _, child in ipairs(model:GetChildren()) do
-            -- Apply to any submodel (which represents attachments)
             if child:IsA("Model") then
                 for _, part in ipairs(child:GetDescendants()) do
                     if part:IsA("MeshPart") then
@@ -153,17 +152,17 @@ local function applyToWeaponModel(model)
     local ok, cw = pcall(require, ReplicatedStorage.Components.Weapon)
     if not ok or not cw then return end
 
+    if Settings.AttachmentsEnabled then
+        if cw.SetFullAttachmentOnWeapon then
+            pcall(cw.SetFullAttachmentOnWeapon, model, LocalPlayer)
+        end
+    end
+
     if Settings.Enabled then
         if RuntimeState.OriginalSetSkinOnWep then
             pcall(RuntimeState.OriginalSetSkinOnWep, model, Settings.WeaponSkin)
         end
         applyAttachmentSkin(model)
-    end
-
-    if Settings.AttachmentsEnabled then
-        if cw.SetFullAttachmentOnWeapon then
-            pcall(cw.SetFullAttachmentOnWeapon, model, LocalPlayer)
-        end
     end
 end
 
@@ -264,13 +263,13 @@ local function applyToCharacter(character)
         if tool:IsA("Tool") then
             for _, child in ipairs(tool:GetChildren()) do
                 if child:IsA("Model") then
+                    if Settings.AttachmentsEnabled and cw.SetFullAttachmentOnWeapon then
+                        pcall(cw.SetFullAttachmentOnWeapon, child, LocalPlayer)
+                    end
                     if Settings.Enabled and RuntimeState.OriginalSetSkinOnWep then
                         pcall(RuntimeState.OriginalSetSkinOnWep, child, Settings.WeaponSkin)
                     end
                     applyAttachmentSkin(child)
-                    if Settings.AttachmentsEnabled and cw.SetFullAttachmentOnWeapon then
-                        pcall(cw.SetFullAttachmentOnWeapon, child, LocalPlayer)
-                    end
                 end
             end
         end
