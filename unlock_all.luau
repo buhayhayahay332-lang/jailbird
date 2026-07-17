@@ -6,7 +6,7 @@ local Settings = {
     Enabled             = false,
     WeaponSkin          = "Crystalline",
     AttachmentSkin      = "Gold",
-    AttachmentsEnabled  = false,
+    AttachmentsEnabled  = true,
     Attachments = {
         Sight  = "Compact",
         Grip   = "Vertical Grip",
@@ -62,10 +62,10 @@ Global.__unlock_cleanup = function()
     local RS = game:GetService("ReplicatedStorage")
     local ok, cw = pcall(require, RS.Components.Weapon)
     if ok and cw then
-        if RuntimeState.OriginalSetSkinOnWep   then cw.SetSkinOnWep             = RuntimeState.OriginalSetSkinOnWep   end
-        if RuntimeState.OriginalSetAttachSkins then cw.SetAttachmentSkins        = RuntimeState.OriginalSetAttachSkins end
-        if RuntimeState.OriginalSetFullAttach  then cw.SetFullAttachmentOnWeapon = RuntimeState.OriginalSetFullAttach  end
-        if RuntimeState.OriginalSetAttachOnWep then cw.SetAttachmentOnWep        = RuntimeState.OriginalSetAttachOnWep end
+        if RuntimeState.OriginalSetSkinOnWep   then cw.SetSkinOnWep               = RuntimeState.OriginalSetSkinOnWep   end
+        if RuntimeState.OriginalSetAttachSkins then cw.SetAttachmentSkins          = RuntimeState.OriginalSetAttachSkins end
+        if RuntimeState.OriginalSetFullAttach  then cw.SetFullAttachmentOnWeapon   = RuntimeState.OriginalSetFullAttach  end
+        if RuntimeState.OriginalSetAttachOnWep then cw.SetAttachmentOnWep          = RuntimeState.OriginalSetAttachOnWep end
     end
 
     RuntimeState.Hooked = false
@@ -74,6 +74,7 @@ end
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer       = Players.LocalPlayer
+
 
 local function safeRawGet(t, k)
     if type(t) ~= "table" then return nil end
@@ -101,6 +102,7 @@ local function applyAttachmentSkin(model)
     if not skinObj then return end
     pcall(function()
         for _, child in ipairs(model:GetChildren()) do
+            -- Apply to any submodel (which represents attachments)
             if child:IsA("Model") then
                 for _, part in ipairs(child:GetDescendants()) do
                     if part:IsA("MeshPart") then
@@ -112,6 +114,18 @@ local function applyAttachmentSkin(model)
     end)
 end
 
+local function copyAnimations(source, target)
+    if not source or not target then return false end
+    local anims = source:FindFirstChild("Animations") or source:FindFirstChild("Animations", true)
+    if anims and anims:IsA("Folder") then
+        local clone = anims:Clone()
+        clone.Parent = target
+        return true
+    end
+    return false
+end
+
+
 local function getWeaponDataControllers()
     local results = {}
     if type(getgc) ~= "function" then return results end
@@ -121,9 +135,10 @@ local function getWeaponDataControllers()
 
     for _, obj in ipairs(objects) do
         if type(obj) == "table" then
-            local tools = safeRawGet(obj, "Tools")
-            if type(tools) == "table" then
-                if safeRawGet(tools, "Primary") or safeRawGet(tools, "Secondary") or safeRawGet(tools, "Knife") then
+            local player = safeRawGet(obj, "Player")
+            if player == LocalPlayer then
+                local tools = safeRawGet(obj, "Tools")
+                if type(tools) == "table" then
                     table.insert(results, obj)
                 end
             end
@@ -155,12 +170,12 @@ end
 local function applyKnifeToController(controller)
     if not Settings.KnifeEnabled then return end
 
-    local knifeName   = Settings.Knife
+    local knifeName = Settings.Knife
     local knifeFolder = ReplicatedStorage.Items:FindFirstChild("Knife")
     if not knifeFolder then return end
-
-    local sourceKnife = knifeFolder:FindFirstChild(knifeName)
-    if not sourceKnife then return end
+    
+    local knifeTemplate = knifeFolder:FindFirstChild(knifeName)
+    if not knifeTemplate then return end
 
     local tools = safeRawGet(controller, "Tools")
     if not tools then return end
@@ -168,47 +183,51 @@ local function applyKnifeToController(controller)
     local knifeTool = safeRawGet(tools, "Knife")
     if not knifeTool then return end
 
-    local currentModel = safeRawGet(knifeTool, "Model")
-    if not currentModel or not currentModel.Parent then return end
+    local ok, cw = pcall(require, ReplicatedStorage.Components.Weapon)
+    if not ok or not cw then return end
 
     pcall(function()
-        local function getPathKey(root, part)
-            local segments = {}
-            local current  = part
-            while current and current ~= root do
-                local idx = 0
-                for _, sibling in ipairs(current.Parent:GetChildren()) do
-                    if sibling.Name == current.Name then
-                        idx += 1
-                    end
-                    if sibling == current then break end
-                end
-                table.insert(segments, 1, current.Name .. "[" .. idx .. "]")
-                current = current.Parent
-            end
-            return table.concat(segments, "/")
+        local oldModel = safeRawGet(knifeTool, "Model")
+        local newModel = knifeTemplate:Clone()
+
+        local animsCopied = copyAnimations(oldModel, newModel)
+        
+        if not animsCopied then
+            local origModel = knifeFolder:FindFirstChild(knifeTool.Tool.Name)
+            animsCopied = copyAnimations(origModel, newModel)
         end
 
-        local sourceParts = {}
-        for _, desc in ipairs(sourceKnife:GetDescendants()) do
-            if desc:IsA("MeshPart") then
-                sourceParts[getPathKey(sourceKnife, desc)] = desc
-            end
+        if not animsCopied then
+            local weaponsFolder = ReplicatedStorage:FindFirstChild("Weapons")
+            local weaponTemplate = weaponsFolder and weaponsFolder:FindFirstChild(knifeTool.Tool.Name)
+            animsCopied = copyAnimations(weaponTemplate, newModel)
         end
 
-        for _, desc in ipairs(currentModel:GetDescendants()) do
-            if desc:IsA("MeshPart") then
-                local key = getPathKey(currentModel, desc)
-                local src = sourceParts[key]
-                if src then
-                    desc.TextureID = src.TextureID
-                    desc.MeshId    = src.MeshId
-                    desc.Color     = src.Color
-                    desc.Material  = src.Material
-                    desc.Size      = src.Size
-                end
-            end
+        if not animsCopied then
+            local bayonetModel = knifeFolder:FindFirstChild("Bayonet")
+            animsCopied = copyAnimations(bayonetModel, newModel)
         end
+
+        if not animsCopied then
+            local weaponsFolder = ReplicatedStorage:FindFirstChild("Weapons")
+            local bayonetTemplate = weaponsFolder and weaponsFolder:FindFirstChild("Bayonet")
+            animsCopied = copyAnimations(bayonetTemplate, newModel)
+        end
+
+        if oldModel then
+            oldModel:Destroy()
+        end
+
+        if cw.WeldWeapon then
+            cw.WeldWeapon(newModel)
+        end
+        if cw.SetModelProperties then
+            cw.SetModelProperties(newModel, false, false)
+        end
+
+        local parent = oldModel and oldModel.Parent or (controller.CameraModel or workspace.CurrentCamera)
+        newModel.Parent = parent or workspace.CurrentCamera
+        knifeTool.Model = newModel
     end)
 end
 
