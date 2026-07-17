@@ -95,14 +95,13 @@ local function resolveAttachment(slot)
     return ""
 end
 
-
 local function applyAttachmentSkin(model)
     if not Settings.Enabled then return end
     local skinObj = ReplicatedStorage.Items.AttachmentSkin:FindFirstChild(Settings.AttachmentSkin)
     if not skinObj then return end
     pcall(function()
         for _, child in ipairs(model:GetChildren()) do
-            if child:IsA("Model") then  
+            if child:IsA("Model") then
                 for _, part in ipairs(child:GetDescendants()) do
                     if part:IsA("MeshPart") then
                         part.TextureID = skinObj.Texture
@@ -200,7 +199,7 @@ local function applyKnifeToController(controller)
         for _, desc in ipairs(currentModel:GetDescendants()) do
             if desc:IsA("MeshPart") then
                 local key = getPathKey(currentModel, desc)
-                local src  = sourceParts[key]
+                local src = sourceParts[key]
                 if src then
                     desc.TextureID = src.TextureID
                     desc.MeshId    = src.MeshId
