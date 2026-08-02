@@ -421,7 +421,7 @@ local function getClosestPlayer()
         local ScreenPosition, OnScreen = getPositionOnScreen(HumanoidRootPart.Position)
         if not OnScreen then continue end
 
-        local Distance = (getMousePosition() - ScreenPosition).Magnitude
+        local Distance = (Camera.ViewportSize / 2 - ScreenPosition).Magnitude
         if Distance <= (DistanceToMouse or SilentAimSettings.FOVRadius or 2000) then
             local targetPartName = getTargetPartName()
             if targetPartName == "Random" then
@@ -498,7 +498,7 @@ coroutine.resume(coroutine.create(function()
         
         if isFovVisible() then 
             fov_circle.Visible = true
-            fov_circle.Position = getMousePosition()
+            fov_circle.Position = Camera.ViewportSize / 2
             fov_circle.Radius = SilentAimSettings.FOVRadius
         else
             fov_circle.Visible = false
