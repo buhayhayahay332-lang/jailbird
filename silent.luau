@@ -46,7 +46,11 @@ Global.__test_lua_cleanup = function()
 
     for _, DrawingObject in ipairs(RuntimeState.Drawings) do
         pcall(function()
-            DrawingObject:Remove()
+            if typeof(DrawingObject) == "Instance" then
+                DrawingObject:Destroy()
+            else
+                DrawingObject:Remove()
+            end
         end)
     end
 end
@@ -67,7 +71,36 @@ local FindFirstChild = game.FindFirstChild
 local RenderStepped = RunService.RenderStepped
 local GetMouseLocation = UserInputService.GetMouseLocation
 
+local CoreGui = (gethui and gethui()) or (cloneref and cloneref(game:GetService("CoreGui"))) or game:GetService("CoreGui")
+
 local ValidTargetParts = {"Head", "HumanoidRootPart"}
+
+local fov_gui = Instance.new("ScreenGui")
+fov_gui.Name = "FOVGui"
+fov_gui.ResetOnSpawn = false
+fov_gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+fov_gui.Parent = CoreGui
+
+local fov_frame = Instance.new("Frame")
+fov_frame.Name = "FOVCircle"
+fov_frame.BackgroundTransparency = 1
+fov_frame.BorderSizePixel = 0
+fov_frame.AnchorPoint = Vector2.new(0.5, 0.5)
+fov_frame.Position = UDim2.fromScale(0.5, 0.5)
+fov_frame.Visible = SilentAimSettings.FOVVisible
+fov_frame.Parent = fov_gui
+
+local ui_stroke = Instance.new("UIStroke")
+ui_stroke.Color = Color3.fromRGB(0, 255, 0)
+ui_stroke.Thickness = 1
+ui_stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+ui_stroke.Parent = fov_frame
+
+local ui_corner = Instance.new("UICorner")
+ui_corner.CornerRadius = UDim.new(1, 0)
+ui_corner.Parent = fov_frame
+
+table.insert(RuntimeState.Drawings, fov_gui)
 
 local mouse_box = Drawing.new("Square")
 mouse_box.Visible = true 
@@ -79,18 +112,7 @@ mouse_box.Filled = true
 mouse_box.Visible = SilentAimSettings.Enabled and SilentAimSettings.ShowSilentAimTarget
 table.insert(RuntimeState.Drawings, mouse_box)
 
-local fov_circle = Drawing.new("Circle")
-fov_circle.Thickness = 1
-fov_circle.NumSides = 100
-fov_circle.Radius = 180
-fov_circle.Filled = false
-fov_circle.Visible = false
-fov_circle.ZIndex = 999
-fov_circle.Transparency = 1
-fov_circle.Color = Color3.fromRGB(0, 255, 0)
-fov_circle.Radius = SilentAimSettings.FOVRadius
-fov_circle.Visible = SilentAimSettings.FOVVisible
-table.insert(RuntimeState.Drawings, fov_circle)
+-- Removed Drawing fov_circle as it's now ScreenGui based
 
 local RadarSettings = {
     Enabled = true,
@@ -219,8 +241,8 @@ end
 
 local function syncVisualState()
     mouse_box.Visible = isSilentAimEnabled() and isTargetVisible()
-    fov_circle.Visible = isFovVisible()
-    fov_circle.Radius = SilentAimSettings.FOVRadius
+    fov_frame.Visible = isFovVisible()
+    fov_frame.Size = UDim2.fromOffset(SilentAimSettings.FOVRadius * 2, SilentAimSettings.FOVRadius * 2)
 end
 
 local function getCharacterRoot(character)
@@ -497,11 +519,11 @@ coroutine.resume(coroutine.create(function()
         end
         
         if isFovVisible() then 
-            fov_circle.Visible = true
-            fov_circle.Position = Camera.ViewportSize / 2
-            fov_circle.Radius = SilentAimSettings.FOVRadius
+            fov_frame.Visible = true
+            fov_frame.Position = UDim2.fromScale(0.5, 0.5)
+            fov_frame.Size = UDim2.fromOffset(SilentAimSettings.FOVRadius * 2, SilentAimSettings.FOVRadius * 2)
         else
-            fov_circle.Visible = false
+            fov_frame.Visible = false
         end
 
         updateRadar()
