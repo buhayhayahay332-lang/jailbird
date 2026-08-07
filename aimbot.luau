@@ -12,7 +12,7 @@ local LocalPlayer = Players.LocalPlayer
 local AimbotSettings = getgenv().AimbotSettings or {
     Enabled = false,
     Mode = "Hold",
-    Key = "Q",
+    Key = "V",
     TargetPart = "Head",
     TeamCheck = true,
     WallCheck = false,
@@ -30,7 +30,6 @@ end
 
 local RuntimeState = {
     Connections = {},
-    Drawings = {},
 }
 
 local camControlled = false
@@ -49,25 +48,17 @@ Global.__aimbot_cleanup = function()
             Connection:Disconnect()
         end)
     end
-
-    for _, DrawingObject in ipairs(RuntimeState.Drawings) do
-        pcall(function()
-            DrawingObject:Remove()
-        end)
-    end
 end
 
 local WallCheckParams = RaycastParams.new()
 WallCheckParams.FilterType = Enum.RaycastFilterType.Exclude
 
 local function isVisible(part)
-    local char  = LocalPlayer.Character
-    local hrp   = char and char:FindFirstChild("HumanoidRootPart")
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp or not part then return false end
     WallCheckParams.FilterDescendantsInstances = { char }
-    local origin    = hrp.Position
-    local direction = part.Position - origin
-    local result    = Workspace:Raycast(origin, direction, WallCheckParams)
+    local result = Workspace:Raycast(hrp.Position, part.Position - hrp.Position, WallCheckParams)
     if not result then return true end
     return result.Instance and result.Instance:IsDescendantOf(part.Parent)
 end
@@ -102,15 +93,19 @@ end
 
 local aimToggled = false
 
-local function getCenter()
-    local vp = Workspace.CurrentCamera.ViewportSize
-    return Vector2.new(vp.X / 2, vp.Y / 2)
+local function getTargetPart(char)
+    for _, child in pairs(char:GetChildren()) do
+        if child.Name:lower() == AimbotSettings.TargetPart:lower() then
+            return child
+        end
+    end
+    return char:FindFirstChild("HumanoidRootPart")
 end
 
 local function getBestTarget(cam)
-    local center   = getCenter()
-    local bestPart = nil
-    local bestScore = math.huge
+    local center = cam.ViewportSize / 2
+    local maxDist = SilentAimSettings.FOVRadius or 150
+    local bestPart, bestScore = nil, math.huge
 
     for _, player in pairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
@@ -121,19 +116,13 @@ local function getBestTarget(cam)
         if not hum or hum.Health <= 0 then continue end
         local hrp = char:FindFirstChild("HumanoidRootPart")
         if not hrp then continue end
-        local _, hrpVisible = cam:WorldToViewportPoint(hrp.Position)
-        if not hrpVisible then continue end
 
-        local part
-        for _, child in pairs(char:GetChildren()) do
-            if child.Name:lower() == AimbotSettings.TargetPart:lower() then part = child; break end
-        end
-        part = part or hrp
+        local part = getTargetPart(char) or hrp
 
         local s, onScreen = cam:WorldToViewportPoint(part.Position)
         if not onScreen then continue end
+
         local screenDist = (Vector2.new(s.X, s.Y) - center).Magnitude
-        local maxDist = SilentAimSettings.FOVRadius or 150
         if screenDist > maxDist then continue end
         if AimbotSettings.WallCheck and not isVisible(part) then continue end
 
@@ -146,7 +135,10 @@ local function getBestTarget(cam)
             score = screenDist
         end
 
-        if score < bestScore then bestScore = score; bestPart = part end
+        if score < bestScore then
+            bestScore = score
+            bestPart = part
+        end
     end
 
     return bestPart
@@ -155,23 +147,9 @@ end
 local function shouldAim()
     if not AimbotSettings.Enabled then return false end
     if AimbotSettings.Mode == "Always" then return true end
-    if AimbotSettings.Mode == "Hold"   then return isKeyDown() end
+    if AimbotSettings.Mode == "Hold" then return isKeyDown() end
     if AimbotSettings.Mode == "Toggle" then return aimToggled end
     return false
-end
-
-local function moveTo(cam, part)
-    local s      = cam:WorldToViewportPoint(part.Position)
-    local center = getCenter()
-    local delta  = Vector2.new(s.X, s.Y) - center
-    local vp     = cam.ViewportSize
-    local ppr    = vp.Y / (2 * math.tan(math.rad(cam.FieldOfView) / 2))
-    local factor = 1 - AimbotSettings.Smoothing
-    local yaw    = (-delta.X / ppr) * factor
-    local pitch  = (-delta.Y / ppr) * factor
-    local cf     = cam.CFrame
-    local rot    = cf * CFrame.Angles(0, yaw, 0) * CFrame.Angles(pitch, 0, 0)
-    cam.CFrame   = CFrame.new(cf.Position) * (rot - rot.Position)
 end
 
 table.insert(RuntimeState.Connections,
@@ -185,7 +163,7 @@ table.insert(RuntimeState.Connections,
 
 table.insert(RuntimeState.Connections,
     RunService.RenderStepped:Connect(function()
-        local cam    = Workspace.CurrentCamera
+        local cam = Workspace.CurrentCamera
         if not cam then return end
 
         local aiming = AimbotSettings.Enabled and shouldAim()
@@ -195,8 +173,13 @@ table.insert(RuntimeState.Connections,
                 camControlled = true
                 cam.CameraType = Enum.CameraType.Scriptable
             end
+
             local target = getBestTarget(cam)
-            if target then moveTo(cam, target) end
+            if target then
+                local lerpAmount = math.clamp(1 - AimbotSettings.Smoothing, 0.01, 1)
+                local targetCFrame = CFrame.lookAt(cam.CFrame.Position, target.Position)
+                cam.CFrame = cam.CFrame:Lerp(targetCFrame, lerpAmount)
+            end
         elseif camControlled then
             camControlled = false
             cam.CameraType = Enum.CameraType.Custom
