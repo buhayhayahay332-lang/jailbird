@@ -33,8 +33,17 @@ local RuntimeState = {
     Drawings = {},
 }
 
+local camControlled = false
+
 Global.__aimbot_state = RuntimeState
 Global.__aimbot_cleanup = function()
+    if camControlled then
+        camControlled = false
+        pcall(function()
+            Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+        end)
+    end
+
     for _, Connection in ipairs(RuntimeState.Connections) do
         pcall(function()
             Connection:Disconnect()
@@ -105,7 +114,7 @@ local function getBestTarget(cam)
 
     for _, player in pairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
-        if AimbotSettings.TeamCheck and player.TeamColor == LocalPlayer.TeamColor then continue end
+        if AimbotSettings.TeamCheck and player.Team and player.Team == LocalPlayer.Team then continue end
         local char = player.Character
         if not char then continue end
         local hum = char:FindFirstChildOfClass("Humanoid")
@@ -124,7 +133,8 @@ local function getBestTarget(cam)
         local s, onScreen = cam:WorldToViewportPoint(part.Position)
         if not onScreen then continue end
         local screenDist = (Vector2.new(s.X, s.Y) - center).Magnitude
-        if screenDist > SilentAimSettings.FOVRadius then continue end
+        local maxDist = SilentAimSettings.FOVRadius or 150
+        if screenDist > maxDist then continue end
         if AimbotSettings.WallCheck and not isVisible(part) then continue end
 
         local score
@@ -178,9 +188,18 @@ table.insert(RuntimeState.Connections,
         local cam    = Workspace.CurrentCamera
         if not cam then return end
 
-        if AimbotSettings.Enabled and shouldAim() then
+        local aiming = AimbotSettings.Enabled and shouldAim()
+
+        if aiming then
+            if not camControlled then
+                camControlled = true
+                cam.CameraType = Enum.CameraType.Scriptable
+            end
             local target = getBestTarget(cam)
             if target then moveTo(cam, target) end
+        elseif camControlled then
+            camControlled = false
+            cam.CameraType = Enum.CameraType.Custom
         end
     end)
 )
