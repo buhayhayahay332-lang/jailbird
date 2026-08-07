@@ -17,9 +17,9 @@ local SkinSettings = getgenv().SkinSettings or {
     AttachmentSkin = "Gold",
     AttachmentsEnabled = false,
     Attachments = {
-        Sight  = "Compact",
-        Grip   = "Vertical Grip",
-        Muzzle = "Silencer",
+        Sight  = "",
+        Grip   = "",
+        Muzzle = "",
         Charm  = "",
         Extra  = "",
     },
