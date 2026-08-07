@@ -32,17 +32,8 @@ local RuntimeState = {
     Connections = {},
 }
 
-local camControlled = false
-
 Global.__aimbot_state = RuntimeState
 Global.__aimbot_cleanup = function()
-    if camControlled then
-        camControlled = false
-        pcall(function()
-            Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
-        end)
-    end
-
     for _, Connection in ipairs(RuntimeState.Connections) do
         pcall(function()
             Connection:Disconnect()
@@ -173,23 +164,13 @@ table.insert(RuntimeState.Connections,
         local cam = Workspace.CurrentCamera
         if not cam then return end
 
-        local aiming = AimbotSettings.Enabled and shouldAim()
-
-        if aiming then
-            if not camControlled then
-                camControlled = true
-                cam.CameraType = Enum.CameraType.Scriptable
-            end
-
+        if AimbotSettings.Enabled and shouldAim() then
             local target = getBestTarget(cam)
             if target then
                 local lerpAmount = math.clamp(1 - AimbotSettings.Smoothing, 0.01, 1)
                 local targetCFrame = CFrame.lookAt(cam.CFrame.Position, target.Position)
                 cam.CFrame = cam.CFrame:Lerp(targetCFrame, lerpAmount)
             end
-        elseif camControlled then
-            camControlled = false
-            cam.CameraType = Enum.CameraType.Custom
         end
     end)
 )

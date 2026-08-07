@@ -1,4 +1,4 @@
-print("2")
+print("3")
 local base = "https://raw.githubusercontent.com/buhayhayahay332-lang/jailbird/main/"
 
 local ESP = loadstring(game:HttpGet(base .. "c_esp.luau"))()
@@ -17,9 +17,9 @@ local SkinSettings = getgenv().SkinSettings or {
     AttachmentSkin = "Gold",
     AttachmentsEnabled = false,
     Attachments = {
-        Sight  = "Compact",
-        Grip   = "Vertical Grip",
-        Muzzle = "Silencer",
+        Sight  = "",
+        Grip   = "",
+        Muzzle = "",
         Charm  = "",
         Extra  = "",
     },
@@ -207,6 +207,15 @@ KnifebotGroup:AddToggle("KnifebotEnabled", {
     end,
 })
 
+KnifebotGroup:AddLabel("Toggle Key"):AddKeyPicker("KnifebotKey", {
+    Default  = KnifebotSettings.ToggleKey,
+    NoUI     = true,
+    Text     = "Knifebot Toggle",
+    ChangedCallback = function(v)
+        KnifebotSettings.ToggleKey = v
+    end,
+})
+
 local AimbotGroup = Tabs.SilentAim:AddLeftGroupbox("Aimbot", "crosshair")
 
 AimbotGroup:AddToggle("AimbotEnabled", {
@@ -289,7 +298,7 @@ AimbotGroup:AddSlider("AimbotSmoothing", {
     Text     = "Smoothing",
     Default  = math.floor(AimbotSettings.Smoothing * 100),
     Min      = 0,
-    Max      = 95,
+    Max      = 100,
     Rounding = 0,
     Suffix   = "%",
     Callback = function(v)
