@@ -1,3 +1,4 @@
+print("1")
 local base = "https://raw.githubusercontent.com/buhayhayahay332-lang/jailbird/main/"
 
 local ESP = loadstring(game:HttpGet(base .. "c_esp.luau"))()
