@@ -17,9 +17,9 @@ local SkinSettings = getgenv().SkinSettings or {
     AttachmentSkin = "Gold",
     AttachmentsEnabled = false,
     Attachments = {
-        Sight  = "",
-        Grip   = "",
-        Muzzle = "",
+        Sight  = "Compact",
+        Grip   = "Vertical Grip",
+        Muzzle = "Silencer",
         Charm  = "",
         Extra  = "",
     },
@@ -190,7 +190,7 @@ SAMainGroup:AddLabel("Toggle Key"):AddKeyPicker("SAToggleKey", {
     Default  = SilentAimSettings.ToggleKey,
     NoUI     = true,
     Text     = "Silent Aim Toggle",
-    Callback = function(v)
+    ChangedCallback = function(v)
         SilentAimSettings.ToggleKey = v
     end,
 })
@@ -230,7 +230,7 @@ AimbotGroup:AddLabel("Key"):AddKeyPicker("AimbotKey", {
     Default  = AimbotSettings.Key,
     NoUI     = true,
     Text     = "Aimbot Key",
-    Callback = function(v)
+    ChangedCallback = function(v)
         AimbotSettings.Key = v
     end,
 })

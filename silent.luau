@@ -171,7 +171,14 @@ table.insert(RuntimeState.Drawings, radar_self)
 
 local radar_dots = {}
 
-
+local ExpectedArguments = {
+    Raycast = {
+        ArgCountRequired = 3,
+        Args = {
+            "Instance", "Vector3", "Vector3", "RaycastParams"
+        }
+    }
+}
 
 function CalculateChance(Percentage)
     Percentage = math.floor(Percentage)
@@ -390,7 +397,11 @@ local function updateRadar()
 end
 
 local function getToggleKeyCode()
-    return Enum.KeyCode[SilentAimSettings.ToggleKey]
+    local key = SilentAimSettings.ToggleKey
+    if typeof(key) == "EnumItem" then
+        return key
+    end
+    return Enum.KeyCode[key]
 end
 
 local function IsPlayerVisible(Player)
@@ -494,6 +505,7 @@ coroutine.resume(coroutine.create(function()
     end))
 end))
 
+-- BulletRayCast hook
 for _, Value in next, getgc(true) do
     if typeof(Value) == "function"
     and not isexecutorclosure(Value)

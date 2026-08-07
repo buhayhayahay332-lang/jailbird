@@ -12,7 +12,7 @@ local LocalPlayer = Players.LocalPlayer
 local AimbotSettings = getgenv().AimbotSettings or {
     Enabled = false,
     Mode = "Hold",
-    Key = "V",
+    Key = "Q",
     TargetPart = "Head",
     TeamCheck = true,
     WallCheck = false,
@@ -63,10 +63,17 @@ local function isVisible(part)
     return result.Instance and result.Instance:IsDescendantOf(part.Parent)
 end
 
+local MouseButtons = {
+    MB1 = Enum.UserInputType.MouseButton1,
+    MB2 = Enum.UserInputType.MouseButton2,
+    MB3 = Enum.UserInputType.MouseButton3,
+}
+
 local function resolveKey(key)
     if typeof(key) == "EnumItem" then return key end
     if type(key) == "string" then
         local stripped = key:match("%.([^%.]+)$") or key
+        if MouseButtons[stripped] then return MouseButtons[stripped] end
         local ok1, r1 = pcall(function() return Enum.KeyCode[stripped] end)
         if ok1 and typeof(r1) == "EnumItem" then return r1 end
         local ok2, r2 = pcall(function() return Enum.UserInputType[stripped] end)
