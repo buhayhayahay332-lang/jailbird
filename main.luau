@@ -1,4 +1,4 @@
-local base = "https://raw.githubusercontent.com/buhayhayahay332-lang/jailbird/main/"
+local base = "https://gitlab.com/potanginamo373-lang/jailbird/-/raw/main/"
 
 local ESP = loadstring(game:HttpGet(base .. "c_esp.luau"))()
 loadstring(game:HttpGet(base .. "gun_mod.luau"))()
@@ -9,7 +9,6 @@ loadstring(game:HttpGet(base .. "aimbot.luau"))()
 loadstring(game:HttpGet(base .. "triggerbot.luau"))()
 loadstring(game:HttpGet(base .. "knifebot.luau"))()
 loadstring(game:HttpGet(base .. "combat.luau"))()
-loadstring(game:HttpGet(base .. "resolution.luau"))()
 
 local SkinSettings = getgenv().SkinSettings or {
     Enabled = false,
@@ -31,14 +30,12 @@ local SilentAimSettings = getgenv().SilentAimSettings
 local GunModSettings = getgenv().GunModSettings
 local LocalPlayerSettings = getgenv().LocalPlayerSettings
 local RadarSettings     = getgenv().RadarSettings
-local AimAssistSettings = getgenv().AimAssistSettings
 local AimbotSettings    = getgenv().AimbotSettings
 local TriggerbotSettings = getgenv().TriggerbotSettings
 local KnifebotSettings  = getgenv().KnifebotSettings
 local CombatSettings    = getgenv().CombatSettings
 local CombatHitSounds   = getgenv().CombatHitSounds or {}
 local CombatKillSounds  = getgenv().CombatKillSounds or {}
-local ResolutionSettings = getgenv().ResolutionSettings
 
 
 local repo         = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
@@ -199,68 +196,15 @@ SAMainGroup:AddLabel("Toggle Key"):AddKeyPicker("SAToggleKey", {
 
 SAMainGroup:AddDivider()
 
-local knifeSync = false
+local KnifebotGroup = Tabs.SilentAim:AddLeftGroupbox("Knifebot", "scissors")
 
-local SAMainKnifebot = SAMainGroup:AddToggle("KnifebotSA", {
-    Text     = "Knifebot",
+KnifebotGroup:AddToggle("KnifebotEnabled", {
+    Text     = "Enable Knifebot",
     Default  = KnifebotSettings.Enabled,
     Callback = function(v)
         KnifebotSettings.Enabled = v
-        if not knifeSync then
-            knifeSync = true
-            if Toggles.KnifebotAA then Toggles.KnifebotAA:SetValue(v) end
-            knifeSync = false
-        end
     end,
 })
-
-local SAAimAssistGroup = Tabs.SilentAim:AddLeftGroupbox("Aim Assist  (MOUSEBUTTON2)", "mouse-pointer")
-
-SAAimAssistGroup:AddToggle("AimAssistEnabled", {
-    Text     = "Enable Aim Assist",
-    Default  = AimAssistSettings.Enabled,
-    Callback = function(v)
-        AimAssistSettings.Enabled = v
-    end,
-})
-
-SAAimAssistGroup:AddSlider("AimAssistSmoothness", {
-    Text     = "Smoothness",
-    Default  = AimAssistSettings.Smoothness * 100,
-    Min      = 1,
-    Max      = 100,
-    Rounding = 0,
-    Suffix   = "%",
-    Callback = function(v)
-        AimAssistSettings.Smoothness = v / 100
-    end,
-})
-
-SAAimAssistGroup:AddDivider()
-
-local SAAimKnifebot = SAAimAssistGroup:AddToggle("KnifebotAA", {
-    Text     = "Knifebot",
-    Default  = KnifebotSettings.Enabled,
-    Callback = function(v)
-        KnifebotSettings.Enabled = v
-        if not knifeSync then
-            knifeSync = true
-            if Toggles.KnifebotSA then Toggles.KnifebotSA:SetValue(v) end
-            knifeSync = false
-        end
-    end,
-})
-
---[[
-SAAimAssistGroup:AddLabel("Hold Key"):AddKeyPicker("AimAssistKey", {
-    Default  = AimAssistSettings.BindKey,
-    NoUI     = true,
-    Text     = "Aim Assist Key",
-    Callback = function(v)
-        AimAssistSettings.BindKey = v
-    end,
-})
-]]
 
 local AimbotGroup = Tabs.SilentAim:AddLeftGroupbox("Aimbot", "crosshair")
 
@@ -328,15 +272,15 @@ AimbotGroup:AddToggle("AimbotWallCheck", {
 
 AimbotGroup:AddDivider()
 
-AimbotGroup:AddSlider("AimbotFOV", {
-    Text     = "FOV",
-    Default  = AimbotSettings.FOV,
+AimbotGroup:AddSlider("AimbotSharedFOV", {
+    Text     = "FOV (Shared Circle)",
+    Default  = SilentAimSettings.FOVRadius,
     Min      = 10,
     Max      = 500,
     Rounding = 0,
     Suffix   = "px",
     Callback = function(v)
-        AimbotSettings.FOV = v
+        SilentAimSettings.FOVRadius = v
     end,
 })
 
@@ -349,22 +293,6 @@ AimbotGroup:AddSlider("AimbotSmoothing", {
     Suffix   = "%",
     Callback = function(v)
         AimbotSettings.Smoothing = v / 100
-    end,
-})
-
-AimbotGroup:AddToggle("AimbotShowFOV", {
-    Text     = "Show FOV Circle",
-    Default  = AimbotSettings.ShowFOV,
-    Callback = function(v)
-        AimbotSettings.ShowFOV = v
-    end,
-})
-
-AimbotGroup:AddToggle("AimbotDotted", {
-    Text     = "Dotted FOV",
-    Default  = AimbotSettings.Dotted,
-    Callback = function(v)
-        AimbotSettings.Dotted = v
     end,
 })
 
@@ -395,18 +323,6 @@ TriggerbotGroup:AddToggle("TriggerbotVisibleCheck", {
 })
 
 TriggerbotGroup:AddDivider()
-
-TriggerbotGroup:AddSlider("TriggerbotFOV", {
-    Text     = "FOV",
-    Default  = TriggerbotSettings.FOV,
-    Min      = 10,
-    Max      = 500,
-    Rounding = 0,
-    Suffix   = "px",
-    Callback = function(v)
-        TriggerbotSettings.FOV = v
-    end,
-})
 
 TriggerbotGroup:AddSlider("TriggerbotDelay", {
     Text     = "Shoot Delay",
@@ -708,6 +624,80 @@ FlyGroup:AddSlider("LPFlySpeed", {
     Callback = function(v)
         LocalPlayerSettings.FlySpeed = v
     end,
+})
+
+local DeviceGroup = Tabs.LocalPlayer:AddRightGroupbox("Device Spoofer", "smartphone")
+
+local deviceSpoofCurrent = "Computer"
+
+DeviceGroup:AddDropdown("DeviceSpoof", {
+    Values   = { "Computer", "Mobile", "Console" },
+    Default  = "Computer",
+    Text     = "Device Spoofer",
+    Callback = function(v)
+        deviceSpoofCurrent = v
+        pcall(function()
+            local gameEvents = replicatedStorage:FindFirstChild("GameEvents")
+            local deviceEvent = gameEvents and gameEvents:FindFirstChild("DeviceUpdate")
+            if deviceEvent then deviceEvent:FireServer(deviceSpoofCurrent) end
+        end)
+    end,
+})
+
+local SpoofPlayer2 = game:GetService("Players").LocalPlayer
+SpoofPlayer2.CharacterAdded:Connect(function()
+    task.wait(0.3)
+    pcall(function()
+        local gameEvents = replicatedStorage:FindFirstChild("GameEvents")
+        local deviceEvent = gameEvents and gameEvents:FindFirstChild("DeviceUpdate")
+        if deviceEvent then deviceEvent:FireServer(deviceSpoofCurrent) end
+    end)
+end)
+
+local PromoGroup = Tabs.LocalPlayer:AddRightGroupbox("Promo Codes", "gift")
+
+local promocodes = {
+    "JAILBIRDELITE",
+    "FIRSTPERSONPOSTUPDATE1",
+    "FIRSTPERSON",
+    "NEWGUNSOUNDS",
+    "JAILBIRDIANS",
+    "SMILEYOVERHAUL",
+    "80KLIKESJAILBIRD",
+    "MADDERS",
+    "MIRAGON",
+    "SERVERFIX",
+    "S5RELEASE",
+    "OPTIMISATION",
+    "DEV_CONSOLE",
+    "JAILBIRDSTARTER",
+    "REMASTERED",
+    "JAILBIRD",
+    "MADDERSYT",
+    "CHIVVEDYT",
+}
+
+PromoGroup:AddButton({
+    Text = "Claim All Codes",
+    Func = function()
+        task.spawn(function()
+            local claimEvent = replicatedStorage:FindFirstChild("Events") and replicatedStorage.Events:FindFirstChild("ClaimPromocode")
+            if not claimEvent then
+                Library:Notify({ Title = "Promo Codes", Description = "Claim event not found!", Time = 2 })
+                return
+            end
+            local claimed = 0
+            for _, code in ipairs(promocodes) do
+                pcall(function()
+                    claimEvent:FireServer(code)
+                    claimed = claimed + 1
+                end)
+                task.wait(0.2)
+            end
+            Library:Notify({ Title = "Promo Codes", Description = "Claimed " .. claimed .. "/" .. #promocodes .. " codes!", Time = 5 })
+        end)
+    end,
+    Tooltip = "Fires the ClaimPromocode event for every known Jailbird code",
 })
 
 -- SKINS TAB
@@ -1411,31 +1401,6 @@ MenuGroup:AddDropdown("DPIDropdown", {
 
 MenuGroup:AddDivider()
 
-local deviceSpoofCurrent = "Computer"
-MenuGroup:AddDropdown("DeviceSpoof", {
-    Values   = { "Computer", "Mobile", "Console" },
-    Default  = "Computer",
-    Text     = "Device Spoofer",
-    Callback = function(v)
-        deviceSpoofCurrent = v
-        pcall(function()
-            local gameEvents = replicatedStorage:FindFirstChild("GameEvents")
-            local deviceEvent = gameEvents and gameEvents:FindFirstChild("DeviceUpdate")
-            if deviceEvent then deviceEvent:FireServer(deviceSpoofCurrent) end
-        end)
-    end,
-})
-
-local SpoofPlayer2 = game:GetService("Players").LocalPlayer
-SpoofPlayer2.CharacterAdded:Connect(function()
-    task.wait(0.3)
-    pcall(function()
-        local gameEvents = replicatedStorage:FindFirstChild("GameEvents")
-        local deviceEvent = gameEvents and gameEvents:FindFirstChild("DeviceUpdate")
-        if deviceEvent then deviceEvent:FireServer(deviceSpoofCurrent) end
-    end)
-end)
-
 local staffEnabled = true
 local staffDetectedUsers = {}
 
@@ -1513,88 +1478,6 @@ MenuGroup:AddButton({
 })
 
 Library.ToggleKeybind = Options.MenuKeybind
-
-local ResGroup = Tabs.Settings:AddLeftGroupbox("Resolution", "aperture")
-
-ResGroup:AddToggle("ResEnabled", {
-    Text     = "Enable Resolution Changer",
-    Default  = ResolutionSettings.Enabled,
-    Callback = function(v)
-        ResolutionSettings.Enabled = v
-    end,
-})
-
-ResGroup:AddDivider()
-
-ResGroup:AddSlider("ResHStretch", {
-    Text     = "Horizontal Stretch",
-    Default  = ResolutionSettings.HorizontalStretch,
-    Min      = 10,
-    Max      = 100,
-    Rounding = 0,
-    Suffix   = "%",
-    Callback = function(v)
-        ResolutionSettings.HorizontalStretch = v
-    end,
-})
-
-ResGroup:AddSlider("ResVStretch", {
-    Text     = "Vertical Stretch",
-    Default  = ResolutionSettings.VerticalStretch,
-    Min      = 10,
-    Max      = 100,
-    Rounding = 0,
-    Suffix   = "%",
-    Callback = function(v)
-        ResolutionSettings.VerticalStretch = v
-    end,
-})
-
-local PromoGroup = Tabs.Settings:AddLeftGroupbox("Promo Codes", "gift")
-
-local promocodes = {
-    "JAILBIRDELITE",
-    "FIRSTPERSONPOSTUPDATE1",
-    "FIRSTPERSON",
-    "NEWGUNSOUNDS",
-    "JAILBIRDIANS",
-    "SMILEYOVERHAUL",
-    "80KLIKESJAILBIRD",
-    "MADDERS",
-    "MIRAGON",
-    "SERVERFIX",
-    "S5RELEASE",
-    "OPTIMISATION",
-    "DEV_CONSOLE",
-    "JAILBIRDSTARTER",
-    "REMASTERED",
-    "JAILBIRD",
-    "MADDERSYT",
-    "CHIVVEDYT",
-}
-
-PromoGroup:AddButton({
-    Text = "Claim All Codes",
-    Func = function()
-        task.spawn(function()
-            local claimEvent = replicatedStorage:FindFirstChild("Events") and replicatedStorage.Events:FindFirstChild("ClaimPromocode")
-            if not claimEvent then
-                Library:Notify({ Title = "Promo Codes", Description = "Claim event not found!", Time = 2 })
-                return
-            end
-            local claimed = 0
-            for _, code in ipairs(promocodes) do
-                pcall(function()
-                    claimEvent:FireServer(code)
-                    claimed = claimed + 1
-                end)
-                task.wait(0.2)
-            end
-            Library:Notify({ Title = "Promo Codes", Description = "Claimed " .. claimed .. "/" .. #promocodes .. " codes!", Time = 5 })
-        end)
-    end,
-    Tooltip = "Fires the ClaimPromocode event for every known Jailbird code",
-})
 
 -- THEME & SAVE MANAGER
 

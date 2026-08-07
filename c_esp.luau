@@ -72,8 +72,8 @@ local ESP = {
 
 -- STATE
 local ESPCounter       = 0
-local ActiveESPs       = {}   -- character model → espData
-local PlayerConns      = {}   -- player → { charAdded, charRemoving } connections
+local ActiveESPs       = {}   
+local PlayerConns      = {}  
 local MasterConnection = nil
 
 local _Camera    = nil
@@ -83,11 +83,9 @@ local _Tick      = nil
 local _GuiInsetY = 0
 local ScreenGui  = nil
 
--- shared corners buffer
 local _cb = {}
 for i = 1, 8 do _cb[i] = Vector3.new() end
 
--- HELPERS
 local function getRealPlayerFromCharacter(character)
     return Players:GetPlayerFromCharacter(character)
 end
@@ -587,8 +585,6 @@ Players.PlayerRemoving:Connect(function(player)
     unwatchPlayer(player)
 end)
 
--- When LocalPlayer respawns, fill in any characters that were missed
--- (e.g. players whose character existed while LocalPlayer was dead)
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)  -- let the new camera and character settle
     for _, player in ipairs(Players:GetPlayers()) do

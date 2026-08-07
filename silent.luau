@@ -17,16 +17,9 @@ local SilentAimSettings = {
     HitChance = 100
 }
 
-local AimAssistSettings = {
-    Enabled = false,
-    Smoothness = 0.15,
-    BindKey = "MouseButton2"
-}
-
 -- variables
 local Global = getgenv()
 Global.SilentAimSettings = SilentAimSettings
-Global.AimAssistSettings = AimAssistSettings
 if Global.__test_lua_cleanup then
     pcall(Global.__test_lua_cleanup)
 end
@@ -452,24 +445,6 @@ end
 
 syncVisualState()
 
-local function isAimAssistHeld()
-    if AimAssistSettings.BindKey == "MouseButton2" then
-        return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
-    end
-    return UserInputService:IsKeyDown(Enum.KeyCode[AimAssistSettings.BindKey])
-end
-
-local function applyAimAssist(ClosestPart)
-    if not ClosestPart then return end
-    if not isAimAssistHeld() then return end
-
-    local TargetPosition = ClosestPart.Position
-    local CurrentCFrame = Camera.CFrame
-    local TargetCFrame = CFrame.lookAt(CurrentCFrame.Position, TargetPosition)
-
-    Camera.CFrame = CurrentCFrame:Lerp(TargetCFrame, AimAssistSettings.Smoothness)
-end
-
 table.insert(RuntimeState.Connections, UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if Global.__test_lua_state ~= RuntimeState then return end
     if gameProcessed then return end
@@ -491,10 +466,6 @@ coroutine.resume(coroutine.create(function()
     table.insert(RuntimeState.Connections, RenderStepped:Connect(function()
         if Global.__test_lua_state ~= RuntimeState then return end
         local ClosestPlayer = getClosestPlayer()
-
-      if AimAssistSettings.Enabled then
-            applyAimAssist(ClosestPlayer)
-        end
 
         if isTargetVisible() and isSilentAimEnabled() then
             if ClosestPlayer then 

@@ -16,13 +16,12 @@ local AimbotSettings = getgenv().AimbotSettings or {
     TargetPart = "Head",
     TeamCheck = true,
     WallCheck = false,
-    FOV = 150,
-    ShowFOV = true,
-    Dotted = true,
     Smoothing = 0.25,
     Priority = "Closest to Crosshair",
 }
 getgenv().AimbotSettings = AimbotSettings
+
+local SilentAimSettings = getgenv().SilentAimSettings or { FOVRadius = 150 }
 
 local Global = getgenv()
 if Global.__aimbot_cleanup then
@@ -48,27 +47,6 @@ Global.__aimbot_cleanup = function()
         end)
     end
 end
-
-local FOV_DOTS = 48
-local fovDots = {}
-for i = 1, FOV_DOTS do
-    local d = Drawing.new("Circle")
-    d.Filled = true
-    d.Radius = 2
-    d.NumSides = 8
-    d.Visible = false
-    fovDots[i] = d
-    table.insert(RuntimeState.Drawings, d)
-end
-
-local fovSolid = Drawing.new("Circle")
-fovSolid.Filled = false
-fovSolid.Thickness = 1
-fovSolid.NumSides = 64
-fovSolid.Visible = false
-table.insert(RuntimeState.Drawings, fovSolid)
-
-local fovAngle = 0
 
 local WallCheckParams = RaycastParams.new()
 WallCheckParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -146,7 +124,7 @@ local function getBestTarget(cam)
         local s, onScreen = cam:WorldToViewportPoint(part.Position)
         if not onScreen then continue end
         local screenDist = (Vector2.new(s.X, s.Y) - center).Magnitude
-        if screenDist > AimbotSettings.FOV then continue end
+        if screenDist > SilentAimSettings.FOVRadius then continue end
         if AimbotSettings.WallCheck and not isVisible(part) then continue end
 
         local score
@@ -199,27 +177,6 @@ table.insert(RuntimeState.Connections,
     RunService.RenderStepped:Connect(function()
         local cam    = Workspace.CurrentCamera
         if not cam then return end
-        local center = getCenter()
-        local show   = AimbotSettings.Enabled and AimbotSettings.ShowFOV
-
-        fovAngle = (fovAngle + 0.02) % (math.pi * 2)
-
-        if AimbotSettings.Dotted then
-            fovSolid.Visible = false
-            for i = 1, FOV_DOTS do
-                local skip = (i % 2 == 0)
-                local ang  = (i / FOV_DOTS * math.pi * 2) + fovAngle
-                fovDots[i].Position = Vector2.new(center.X + math.cos(ang) * AimbotSettings.FOV, center.Y + math.sin(ang) * AimbotSettings.FOV)
-                fovDots[i].Color    = Color3.fromRGB(255, 255, 255)
-                fovDots[i].Visible  = show and skip
-            end
-        else
-            for i = 1, FOV_DOTS do fovDots[i].Visible = false end
-            fovSolid.Position = center
-            fovSolid.Radius   = AimbotSettings.FOV
-            fovSolid.Color    = Color3.fromRGB(255, 255, 255)
-            fovSolid.Visible  = show
-        end
 
         if AimbotSettings.Enabled and shouldAim() then
             local target = getBestTarget(cam)

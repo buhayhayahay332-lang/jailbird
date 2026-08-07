@@ -4,7 +4,6 @@ end
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local Workspace = game:GetService("Workspace")
 
@@ -14,10 +13,10 @@ local TriggerbotSettings = getgenv().TriggerbotSettings or {
     Enabled = false,
     TeamCheck = true,
     VisibleCheck = false,
-    FOV = 150,
     Delay = 0.1,
 }
 getgenv().TriggerbotSettings = TriggerbotSettings
+local SilentAimSettings = getgenv().SilentAimSettings or { FOVRadius = 150 }
 
 local Global = getgenv()
 if Global.__triggerbot_cleanup then
@@ -53,7 +52,7 @@ end
 local function getClosestTarget(cam)
     local center    = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
     local best      = nil
-    local bestDist  = TriggerbotSettings.FOV
+    local bestDist  = SilentAimSettings.FOVRadius
 
     for _, player in next, Players:GetPlayers() do
         if player == LocalPlayer then continue end
