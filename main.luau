@@ -1,4 +1,4 @@
-local base = "https://gitlab.com/potanginamo373-lang/jailbird/-/raw/main/"
+local base = "https://raw.githubusercontent.com/buhayhayahay332-lang/jailbird/main/"
 
 local ESP = loadstring(game:HttpGet(base .. "c_esp.luau"))()
 loadstring(game:HttpGet(base .. "gun_mod.luau"))()
