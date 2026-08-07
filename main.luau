@@ -1,10 +1,15 @@
-local base = "https://raw.githubusercontent.com/buhayhayahay332-lang/jailbird/main/"
+local base = "https://gitlab.com/potanginamo373-lang/jailbird/-/raw/main/"
 
 local ESP = loadstring(game:HttpGet(base .. "c_esp.luau"))()
 loadstring(game:HttpGet(base .. "gun_mod.luau"))()
 loadstring(game:HttpGet(base .. "local_player.luau"))()
 loadstring(game:HttpGet(base .. "silent.luau"))()
 loadstring(game:HttpGet(base .. "unlock_all.luau"))()
+loadstring(game:HttpGet(base .. "aimbot.luau"))()
+loadstring(game:HttpGet(base .. "triggerbot.luau"))()
+loadstring(game:HttpGet(base .. "knifebot.luau"))()
+loadstring(game:HttpGet(base .. "combat.luau"))()
+loadstring(game:HttpGet(base .. "resolution.luau"))()
 
 local SkinSettings = getgenv().SkinSettings or {
     Enabled = false,
@@ -27,6 +32,14 @@ local GunModSettings = getgenv().GunModSettings
 local LocalPlayerSettings = getgenv().LocalPlayerSettings
 local RadarSettings     = getgenv().RadarSettings
 local AimAssistSettings = getgenv().AimAssistSettings
+local AimbotSettings    = getgenv().AimbotSettings
+local TriggerbotSettings = getgenv().TriggerbotSettings
+local KnifebotSettings  = getgenv().KnifebotSettings
+local CombatSettings    = getgenv().CombatSettings
+local CombatHitSounds   = getgenv().CombatHitSounds or {}
+local CombatKillSounds  = getgenv().CombatKillSounds or {}
+local ResolutionSettings = getgenv().ResolutionSettings
+
 
 local repo         = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library      = loadstring(game:HttpGet(repo .. "Library.lua"))()
@@ -115,6 +128,7 @@ local Tabs = {
     GunMod      = Window:AddTab("Gun Mod",    "sliders-horizontal"),
     Skins      = Window:AddTab("Skins", "cog"),
     LocalPlayer = Window:AddTab("Local Player", "user"),
+    Spoofer     = Window:AddTab("Spoofer",    "user-check"),
     Settings    = Window:AddTab("Settings",   "settings"),
 }
 
@@ -183,7 +197,24 @@ SAMainGroup:AddLabel("Toggle Key"):AddKeyPicker("SAToggleKey", {
     end,
 })
 
-local SAAimAssistGroup = Tabs.SilentAim:AddLeftGroupbox("Aim Assist", "mouse-pointer")
+SAMainGroup:AddDivider()
+
+local knifeSync = false
+
+local SAMainKnifebot = SAMainGroup:AddToggle("KnifebotSA", {
+    Text     = "Knifebot",
+    Default  = KnifebotSettings.Enabled,
+    Callback = function(v)
+        KnifebotSettings.Enabled = v
+        if not knifeSync then
+            knifeSync = true
+            if Toggles.KnifebotAA then Toggles.KnifebotAA:SetValue(v) end
+            knifeSync = false
+        end
+    end,
+})
+
+local SAAimAssistGroup = Tabs.SilentAim:AddLeftGroupbox("Aim Assist  (MOUSEBUTTON2)", "mouse-pointer")
 
 SAAimAssistGroup:AddToggle("AimAssistEnabled", {
     Text     = "Enable Aim Assist",
@@ -205,12 +236,187 @@ SAAimAssistGroup:AddSlider("AimAssistSmoothness", {
     end,
 })
 
+SAAimAssistGroup:AddDivider()
+
+local SAAimKnifebot = SAAimAssistGroup:AddToggle("KnifebotAA", {
+    Text     = "Knifebot",
+    Default  = KnifebotSettings.Enabled,
+    Callback = function(v)
+        KnifebotSettings.Enabled = v
+        if not knifeSync then
+            knifeSync = true
+            if Toggles.KnifebotSA then Toggles.KnifebotSA:SetValue(v) end
+            knifeSync = false
+        end
+    end,
+})
+
+--[[
 SAAimAssistGroup:AddLabel("Hold Key"):AddKeyPicker("AimAssistKey", {
     Default  = AimAssistSettings.BindKey,
     NoUI     = true,
     Text     = "Aim Assist Key",
     Callback = function(v)
         AimAssistSettings.BindKey = v
+    end,
+})
+]]
+
+local AimbotGroup = Tabs.SilentAim:AddLeftGroupbox("Aimbot", "crosshair")
+
+AimbotGroup:AddToggle("AimbotEnabled", {
+    Text     = "Enable Aimbot",
+    Default  = AimbotSettings.Enabled,
+    Callback = function(v)
+        AimbotSettings.Enabled = v
+    end,
+})
+
+AimbotGroup:AddDropdown("AimbotMode", {
+    Text     = "Mode",
+    Values   = { "Hold", "Toggle", "Always" },
+    Default  = AimbotSettings.Mode,
+    Callback = function(v)
+        AimbotSettings.Mode = v
+    end,
+})
+
+AimbotGroup:AddLabel("Key"):AddKeyPicker("AimbotKey", {
+    Default  = AimbotSettings.Key,
+    NoUI     = true,
+    Text     = "Aimbot Key",
+    Callback = function(v)
+        AimbotSettings.Key = v
+    end,
+})
+
+AimbotGroup:AddDivider()
+
+AimbotGroup:AddDropdown("AimbotTargetPart", {
+    Text     = "Target Part",
+    Values   = { "Head", "HumanoidRootPart", "UpperTorso" },
+    Default  = AimbotSettings.TargetPart,
+    Callback = function(v)
+        AimbotSettings.TargetPart = v
+    end,
+})
+
+AimbotGroup:AddDropdown("AimbotPriority", {
+    Text     = "Target Priority",
+    Values   = { "Closest to Crosshair", "Lowest Health", "Closest Distance" },
+    Default  = AimbotSettings.Priority,
+    Callback = function(v)
+        AimbotSettings.Priority = v
+    end,
+})
+
+AimbotGroup:AddToggle("AimbotTeamCheck", {
+    Text     = "Team Check",
+    Default  = AimbotSettings.TeamCheck,
+    Callback = function(v)
+        AimbotSettings.TeamCheck = v
+    end,
+})
+
+AimbotGroup:AddToggle("AimbotWallCheck", {
+    Text     = "Wall Check",
+    Default  = AimbotSettings.WallCheck,
+    Callback = function(v)
+        AimbotSettings.WallCheck = v
+    end,
+})
+
+AimbotGroup:AddDivider()
+
+AimbotGroup:AddSlider("AimbotFOV", {
+    Text     = "FOV",
+    Default  = AimbotSettings.FOV,
+    Min      = 10,
+    Max      = 500,
+    Rounding = 0,
+    Suffix   = "px",
+    Callback = function(v)
+        AimbotSettings.FOV = v
+    end,
+})
+
+AimbotGroup:AddSlider("AimbotSmoothing", {
+    Text     = "Smoothing",
+    Default  = math.floor(AimbotSettings.Smoothing * 100),
+    Min      = 0,
+    Max      = 95,
+    Rounding = 0,
+    Suffix   = "%",
+    Callback = function(v)
+        AimbotSettings.Smoothing = v / 100
+    end,
+})
+
+AimbotGroup:AddToggle("AimbotShowFOV", {
+    Text     = "Show FOV Circle",
+    Default  = AimbotSettings.ShowFOV,
+    Callback = function(v)
+        AimbotSettings.ShowFOV = v
+    end,
+})
+
+AimbotGroup:AddToggle("AimbotDotted", {
+    Text     = "Dotted FOV",
+    Default  = AimbotSettings.Dotted,
+    Callback = function(v)
+        AimbotSettings.Dotted = v
+    end,
+})
+
+local TriggerbotGroup = Tabs.SilentAim:AddLeftGroupbox("Triggerbot", "zap")
+
+TriggerbotGroup:AddToggle("TriggerbotEnabled", {
+    Text     = "Enable Triggerbot",
+    Default  = TriggerbotSettings.Enabled,
+    Callback = function(v)
+        TriggerbotSettings.Enabled = v
+    end,
+})
+
+TriggerbotGroup:AddToggle("TriggerbotTeamCheck", {
+    Text     = "Team Check",
+    Default  = TriggerbotSettings.TeamCheck,
+    Callback = function(v)
+        TriggerbotSettings.TeamCheck = v
+    end,
+})
+
+TriggerbotGroup:AddToggle("TriggerbotVisibleCheck", {
+    Text     = "Visible Check",
+    Default  = TriggerbotSettings.VisibleCheck,
+    Callback = function(v)
+        TriggerbotSettings.VisibleCheck = v
+    end,
+})
+
+TriggerbotGroup:AddDivider()
+
+TriggerbotGroup:AddSlider("TriggerbotFOV", {
+    Text     = "FOV",
+    Default  = TriggerbotSettings.FOV,
+    Min      = 10,
+    Max      = 500,
+    Rounding = 0,
+    Suffix   = "px",
+    Callback = function(v)
+        TriggerbotSettings.FOV = v
+    end,
+})
+
+TriggerbotGroup:AddSlider("TriggerbotDelay", {
+    Text     = "Shoot Delay",
+    Default  = math.floor(TriggerbotSettings.Delay * 100),
+    Min      = 1,
+    Max      = 100,
+    Rounding = 0,
+    Suffix   = "ms",
+    Callback = function(v)
+        TriggerbotSettings.Delay = v / 100
     end,
 })
 
@@ -237,13 +443,170 @@ SAFOVGroup:AddToggle("SAFOVVisible", {
     end,
 })
 
-SAFOVGroup:AddToggle("SAShowTarget", {
-    Text     = "Show Target Indicator",
-    Default  = SilentAimSettings.ShowSilentAimTarget,
+local HitmarkerGroup = Tabs.SilentAim:AddRightGroupbox("Hitmarker", "crosshair")
+
+HitmarkerGroup:AddToggle("HitmarkerEnabled", {
+    Text     = "Enable Hitmarker",
+    Default  = CombatSettings.Hitmarker.Enabled,
     Callback = function(v)
-        SilentAimSettings.ShowSilentAimTarget = v
+        CombatSettings.Hitmarker.Enabled = v
     end,
 })
+
+HitmarkerGroup:AddToggle("HitIndicator", {
+    Text     = "Hit Indicator",
+    Default  = CombatSettings.HitIndicator.Enabled,
+    Callback = function(v)
+        CombatSettings.HitIndicator.Enabled = v
+    end,
+})
+
+HitmarkerGroup:AddSlider("HitmarkerDuration", {
+    Text     = "Duration",
+    Default  = math.floor(CombatSettings.Hitmarker.Duration * 100),
+    Min      = 10,
+    Max      = 200,
+    Rounding = 0,
+    Suffix   = "ms",
+    Callback = function(v)
+        CombatSettings.Hitmarker.Duration = v / 100
+    end,
+})
+
+HitmarkerGroup:AddLabel("Hit Color"):AddColorPicker("HitmarkerColor", {
+    Default  = CombatSettings.Hitmarker.Color,
+    Callback = function(v)
+        CombatSettings.Hitmarker.Color = v
+    end,
+})
+
+HitmarkerGroup:AddLabel("Kill Color"):AddColorPicker("HitmarkerKillColor", {
+    Default  = CombatSettings.Hitmarker.KillColor,
+    Callback = function(v)
+        CombatSettings.Hitmarker.KillColor = v
+    end,
+})
+
+HitmarkerGroup:AddDivider()
+
+HitmarkerGroup:AddToggle("HitNotify", {
+    Text     = "Hit Log",
+    Default  = CombatSettings.NotifyEnabled,
+    Callback = function(v)
+        CombatSettings.NotifyEnabled = v
+    end,
+})
+
+HitmarkerGroup:AddSlider("HitNotifyDuration", {
+    Text     = "Notify Duration",
+    Default  = CombatSettings.NotifyDuration,
+    Min      = 1,
+    Max      = 10,
+    Rounding = 0,
+    Suffix   = "s",
+    Callback = function(v)
+        CombatSettings.NotifyDuration = v
+    end,
+})
+
+local SoundGroup = Tabs.SilentAim:AddRightGroupbox("Hit Sounds", "volume-2")
+
+SoundGroup:AddToggle("HitSoundsEnabled", {
+    Text     = "Enable Hit Sounds",
+    Default  = CombatSettings.Sounds.HitEnabled,
+    Callback = function(v)
+        CombatSettings.Sounds.HitEnabled = v
+    end,
+})
+
+SoundGroup:AddDropdown("HitSound", {
+    Text     = "Hit Sound",
+    Values   = CombatHitSounds,
+    Default  = CombatSettings.Sounds.HitSound,
+    Callback = function(v)
+        CombatSettings.Sounds.HitSound = v
+    end,
+})
+
+SoundGroup:AddSlider("HitSoundVolume", {
+    Text     = "Hit Volume",
+    Default  = math.floor(CombatSettings.Sounds.HitVolume * 100),
+    Min      = 0,
+    Max      = 100,
+    Rounding = 0,
+    Suffix   = "%",
+    Callback = function(v)
+        CombatSettings.Sounds.HitVolume = v / 100
+    end,
+})
+
+SoundGroup:AddButton({
+    Text = "Test Hit Sound",
+    Func = function()
+        pcall(function()
+            local sounds = CombatSettings.Sounds
+            if sounds.HitEnabled then
+                local ids = getgenv().CombatSoundIds or {}
+                local sound = Instance.new("Sound")
+                sound.SoundId = "rbxassetid://" .. (ids[sounds.HitSound] or "")
+                sound.Volume  = sounds.HitVolume
+                sound.Parent  = workspace.CurrentCamera
+                sound:Play()
+                game:GetService("Debris"):AddItem(sound, 3)
+            end
+        end)
+    end,
+})
+
+SoundGroup:AddDivider()
+
+SoundGroup:AddToggle("KillSoundsEnabled", {
+    Text     = "Enable Kill Sounds",
+    Default  = CombatSettings.Sounds.KillEnabled,
+    Callback = function(v)
+        CombatSettings.Sounds.KillEnabled = v
+    end,
+})
+
+SoundGroup:AddDropdown("KillSound", {
+    Text     = "Kill Sound",
+    Values   = CombatKillSounds,
+    Default  = CombatSettings.Sounds.KillSound,
+    Callback = function(v)
+        CombatSettings.Sounds.KillSound = v
+    end,
+})
+
+SoundGroup:AddSlider("KillSoundVolume", {
+    Text     = "Kill Volume",
+    Default  = math.floor(CombatSettings.Sounds.KillVolume * 100),
+    Min      = 0,
+    Max      = 100,
+    Rounding = 0,
+    Suffix   = "%",
+    Callback = function(v)
+        CombatSettings.Sounds.KillVolume = v / 100
+    end,
+})
+
+SoundGroup:AddButton({
+    Text = "Test Kill Sound",
+    Func = function()
+        pcall(function()
+            local sounds = CombatSettings.Sounds
+            if sounds.KillEnabled then
+                local ids = getgenv().CombatSoundIds or {}
+                local sound = Instance.new("Sound")
+                sound.SoundId = "rbxassetid://" .. (ids[sounds.KillSound] or "")
+                sound.Volume  = sounds.KillVolume
+                sound.Parent  = workspace.CurrentCamera
+                sound:Play()
+                game:GetService("Debris"):AddItem(sound, 3)
+            end
+        end)
+    end,
+})
+
 
 -- GUN MOD TAB
 
@@ -880,6 +1243,145 @@ RadarOptGroup:AddSlider("RadarAnchorY", {
     end,
 })
 
+-- SPOOFER TAB
+
+local SpoofPlayer = game:GetService("Players").LocalPlayer
+local spoofPlayerData = SpoofPlayer:FindFirstChild("PlayerData")
+local spoofStats = spoofPlayerData and spoofPlayerData:FindFirstChild("Stats")
+
+local originalSpoofName = SpoofPlayer.Name
+local originalSpoofDisplay = SpoofPlayer.DisplayName
+
+local SpoofStatsGroup = Tabs.Spoofer:AddLeftGroupbox("Stats", "chart-line")
+local SpoofPlayerGroup = Tabs.Spoofer:AddRightGroupbox("Player", "user")
+
+local function spoofStat(attribute, value)
+    local number = tonumber(value)
+    if number == nil then return end
+    if spoofStats then
+        pcall(function() spoofStats:SetAttribute(attribute, number) end)
+    end
+end
+
+SpoofStatsGroup:AddInput("SpoofCredit", {
+    Text        = "Credit",
+    Placeholder = "Leave empty to keep",
+    Default     = "",
+    Numeric     = true,
+    Callback    = function(v) spoofStat("Credit", v) end,
+})
+
+SpoofStatsGroup:AddInput("SpoofLevel", {
+    Text        = "Level",
+    Placeholder = "Leave empty to keep",
+    Default     = "",
+    Numeric     = true,
+    Callback    = function(v) spoofStat("Level", v) end,
+})
+
+SpoofStatsGroup:AddInput("SpoofKills", {
+    Text        = "Kills",
+    Placeholder = "Leave empty to keep",
+    Default     = "",
+    Numeric     = true,
+    Callback    = function(v) spoofStat("Kills", v) end,
+})
+
+SpoofStatsGroup:AddInput("SpoofDeaths", {
+    Text        = "Deaths",
+    Placeholder = "Leave empty to keep",
+    Default     = "",
+    Numeric     = true,
+    Callback    = function(v) spoofStat("Deaths", v) end,
+})
+
+SpoofStatsGroup:AddInput("SpoofDamage", {
+    Text        = "Damage",
+    Placeholder = "Leave empty to keep",
+    Default     = "",
+    Numeric     = true,
+    Callback    = function(v) spoofStat("Damage", v) end,
+})
+
+SpoofStatsGroup:AddInput("SpoofRankedRating", {
+    Text        = "Ranked Rating",
+    Placeholder = "Leave empty to keep",
+    Default     = "",
+    Numeric     = true,
+    Callback    = function(v) spoofStat("RankedRating", v) end,
+})
+
+SpoofStatsGroup:AddInput("SpoofRankedKills", {
+    Text        = "Ranked Kills",
+    Placeholder = "Leave empty to keep",
+    Default     = "",
+    Numeric     = true,
+    Callback    = function(v) spoofStat("RankedKills", v) end,
+})
+
+SpoofStatsGroup:AddInput("SpoofRankedDeaths", {
+    Text        = "Ranked Deaths",
+    Placeholder = "Leave empty to keep",
+    Default     = "",
+    Numeric     = true,
+    Callback    = function(v) spoofStat("RankedDeaths", v) end,
+})
+
+SpoofStatsGroup:AddDivider()
+
+SpoofStatsGroup:AddButton({
+    Text = "Restore Stats",
+    Func = function()
+        if not spoofStats then
+            Library:Notify({ Title = "Spoofer", Description = "Stats not found!", Time = 2 })
+            return
+        end
+        pcall(function() spoofStats:SetAttribute("Credit",       nil) end)
+        pcall(function() spoofStats:SetAttribute("Level",        nil) end)
+        pcall(function() spoofStats:SetAttribute("Kills",        nil) end)
+        pcall(function() spoofStats:SetAttribute("Deaths",       nil) end)
+        pcall(function() spoofStats:SetAttribute("Damage",       nil) end)
+        pcall(function() spoofStats:SetAttribute("RankedRating", nil) end)
+        pcall(function() spoofStats:SetAttribute("RankedKills",  nil) end)
+        pcall(function() spoofStats:SetAttribute("RankedDeaths", nil) end)
+        Library:Notify({ Title = "Spoofer", Description = "Stats reset!", Time = 2 })
+    end,
+    Tooltip = "Removes all spoofed stat attributes",
+})
+
+SpoofPlayerGroup:AddInput("SpoofUsername", {
+    Text        = "Username",
+    Placeholder = "Leave empty to keep",
+    Default     = "",
+    Callback    = function(v)
+        if v ~= "" then
+            pcall(function() SpoofPlayer.Name = v end)
+        end
+    end,
+})
+
+SpoofPlayerGroup:AddInput("SpoofDisplayName", {
+    Text        = "Display Name",
+    Placeholder = "Leave empty to keep",
+    Default     = "",
+    Callback    = function(v)
+        if v ~= "" then
+            pcall(function() SpoofPlayer.DisplayName = v end)
+        end
+    end,
+})
+
+SpoofPlayerGroup:AddDivider()
+
+SpoofPlayerGroup:AddButton({
+    Text = "Restore Original Name",
+    Func = function()
+        pcall(function() SpoofPlayer.Name        = originalSpoofName    end)
+        pcall(function() SpoofPlayer.DisplayName = originalSpoofDisplay end)
+        Library:Notify({ Title = "Spoofer", Description = "Name restored!", Time = 2 })
+    end,
+})
+
 -- SETTINGS TAB
 
 local MenuGroup = Tabs.Settings:AddLeftGroupbox("Menu", "wrench")
@@ -909,6 +1411,96 @@ MenuGroup:AddDropdown("DPIDropdown", {
 
 MenuGroup:AddDivider()
 
+local deviceSpoofCurrent = "Computer"
+MenuGroup:AddDropdown("DeviceSpoof", {
+    Values   = { "Computer", "Mobile", "Console" },
+    Default  = "Computer",
+    Text     = "Device Spoofer",
+    Callback = function(v)
+        deviceSpoofCurrent = v
+        pcall(function()
+            local gameEvents = replicatedStorage:FindFirstChild("GameEvents")
+            local deviceEvent = gameEvents and gameEvents:FindFirstChild("DeviceUpdate")
+            if deviceEvent then deviceEvent:FireServer(deviceSpoofCurrent) end
+        end)
+    end,
+})
+
+local SpoofPlayer2 = game:GetService("Players").LocalPlayer
+SpoofPlayer2.CharacterAdded:Connect(function()
+    task.wait(0.3)
+    pcall(function()
+        local gameEvents = replicatedStorage:FindFirstChild("GameEvents")
+        local deviceEvent = gameEvents and gameEvents:FindFirstChild("DeviceUpdate")
+        if deviceEvent then deviceEvent:FireServer(deviceSpoofCurrent) end
+    end)
+end)
+
+local staffEnabled = true
+local staffDetectedUsers = {}
+
+local staffWatchlist = {
+    [128547037]  = "tester",
+    [1089888905] = "tester",
+    [4269359593] = "tester",
+    [4621670832] = "tester",
+    [411845421]  = "tester",
+    [1066505679] = "tester",
+    [550183999]  = "tester",
+    [7032328813] = "tester",
+    [7660433176] = "tester",
+    [1932714775] = "tester",
+    [644109069]  = "tester",
+    [8300163915] = "tester",
+    [1885942346] = "tester",
+    [94409100]   = "moderator",
+    [7017152868] = "moderator",
+    [70838151]   = "moderator",
+    [4323561112] = "moderator",
+    [1474440307] = "moderator",
+    [2469896978] = "moderator",
+    [1475316060] = "developer",
+    [22502596]   = "head admin",
+    [544645921]  = "founder",
+}
+
+local function detectStaff(player)
+    if not staffEnabled then return end
+    if staffDetectedUsers[player.UserId] then return end
+    local role = staffWatchlist[player.UserId]
+    if role then
+        staffDetectedUsers[player.UserId] = true
+        Library:Notify({
+            Title       = role .. " detected",
+            Description = player.Name .. " | user id: " .. player.UserId,
+            Time        = 10,
+        })
+    end
+end
+
+MenuGroup:AddToggle("StaffDetector", {
+    Text     = "Staff Detector",
+    Default  = true,
+    Callback = function(v)
+        staffEnabled = v
+        if v then
+            for id in pairs(staffDetectedUsers) do
+                staffDetectedUsers[id] = nil
+            end
+            for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
+                detectStaff(p)
+            end
+        end
+    end,
+})
+
+for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
+    detectStaff(p)
+end
+game:GetService("Players").PlayerAdded:Connect(detectStaff)
+
+MenuGroup:AddDivider()
+
 MenuGroup:AddLabel("Menu Bind"):AddKeyPicker("MenuKeybind", {
     Default = "RightShift",
     NoUI    = true,
@@ -921,6 +1513,88 @@ MenuGroup:AddButton({
 })
 
 Library.ToggleKeybind = Options.MenuKeybind
+
+local ResGroup = Tabs.Settings:AddLeftGroupbox("Resolution", "aperture")
+
+ResGroup:AddToggle("ResEnabled", {
+    Text     = "Enable Resolution Changer",
+    Default  = ResolutionSettings.Enabled,
+    Callback = function(v)
+        ResolutionSettings.Enabled = v
+    end,
+})
+
+ResGroup:AddDivider()
+
+ResGroup:AddSlider("ResHStretch", {
+    Text     = "Horizontal Stretch",
+    Default  = ResolutionSettings.HorizontalStretch,
+    Min      = 10,
+    Max      = 100,
+    Rounding = 0,
+    Suffix   = "%",
+    Callback = function(v)
+        ResolutionSettings.HorizontalStretch = v
+    end,
+})
+
+ResGroup:AddSlider("ResVStretch", {
+    Text     = "Vertical Stretch",
+    Default  = ResolutionSettings.VerticalStretch,
+    Min      = 10,
+    Max      = 100,
+    Rounding = 0,
+    Suffix   = "%",
+    Callback = function(v)
+        ResolutionSettings.VerticalStretch = v
+    end,
+})
+
+local PromoGroup = Tabs.Settings:AddLeftGroupbox("Promo Codes", "gift")
+
+local promocodes = {
+    "JAILBIRDELITE",
+    "FIRSTPERSONPOSTUPDATE1",
+    "FIRSTPERSON",
+    "NEWGUNSOUNDS",
+    "JAILBIRDIANS",
+    "SMILEYOVERHAUL",
+    "80KLIKESJAILBIRD",
+    "MADDERS",
+    "MIRAGON",
+    "SERVERFIX",
+    "S5RELEASE",
+    "OPTIMISATION",
+    "DEV_CONSOLE",
+    "JAILBIRDSTARTER",
+    "REMASTERED",
+    "JAILBIRD",
+    "MADDERSYT",
+    "CHIVVEDYT",
+}
+
+PromoGroup:AddButton({
+    Text = "Claim All Codes",
+    Func = function()
+        task.spawn(function()
+            local claimEvent = replicatedStorage:FindFirstChild("Events") and replicatedStorage.Events:FindFirstChild("ClaimPromocode")
+            if not claimEvent then
+                Library:Notify({ Title = "Promo Codes", Description = "Claim event not found!", Time = 2 })
+                return
+            end
+            local claimed = 0
+            for _, code in ipairs(promocodes) do
+                pcall(function()
+                    claimEvent:FireServer(code)
+                    claimed = claimed + 1
+                end)
+                task.wait(0.2)
+            end
+            Library:Notify({ Title = "Promo Codes", Description = "Claimed " .. claimed .. "/" .. #promocodes .. " codes!", Time = 5 })
+        end)
+    end,
+    Tooltip = "Fires the ClaimPromocode event for every known Jailbird code",
+})
 
 -- THEME & SAVE MANAGER
 

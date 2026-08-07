@@ -79,6 +79,7 @@ local fov_gui = Instance.new("ScreenGui")
 fov_gui.Name = "FOVGui"
 fov_gui.ResetOnSpawn = false
 fov_gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+fov_gui.IgnoreGuiInset = true
 fov_gui.Parent = CoreGui
 
 local fov_frame = Instance.new("Frame")
@@ -112,7 +113,6 @@ mouse_box.Filled = true
 mouse_box.Visible = SilentAimSettings.Enabled and SilentAimSettings.ShowSilentAimTarget
 table.insert(RuntimeState.Drawings, mouse_box)
 
--- Removed Drawing fov_circle as it's now ScreenGui based
 
 local RadarSettings = {
     Enabled = true,
@@ -178,14 +178,7 @@ table.insert(RuntimeState.Drawings, radar_self)
 
 local radar_dots = {}
 
-local ExpectedArguments = {
-    Raycast = {
-        ArgCountRequired = 3,
-        Args = {
-            "Instance", "Vector3", "Vector3", "RaycastParams"
-        }
-    }
-}
+
 
 function CalculateChance(Percentage)
     Percentage = math.floor(Percentage)
@@ -530,31 +523,37 @@ coroutine.resume(coroutine.create(function()
     end))
 end))
 
--- hooks
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(...)
-    if Global.__test_lua_state ~= RuntimeState then
-        return oldNamecall(...)
-    end
-
-    local Method = getnamecallmethod()
-    local Arguments = {...}
-    local self = Arguments[1]
-    local chance = CalculateChance(SilentAimSettings.HitChance)
-
-    if isSilentAimEnabled() and self == workspace and not checkcaller() and chance == true then
-        if Method == "Raycast" and getMethod() == Method then
-            if ValidateArguments(Arguments, ExpectedArguments.Raycast) then
-                local A_Origin = Arguments[2]
-
-                local HitPart = getClosestPlayer()
-                if HitPart then
-                    Arguments[3] = getDirection(A_Origin, HitPart.Position)
-                    return oldNamecall(unpack(Arguments))
+for _, Value in next, getgc(true) do
+    if typeof(Value) == "function"
+    and not isexecutorclosure(Value)
+    and not iscclosure(Value)
+    and islclosure(Value) then
+        local Info = debug.getinfo(Value)
+        if Info and Info.name == "BulletRayCast" then
+            local Hook
+            Hook = hookfunction(Value, newcclosure(function(...)
+                if Global.__test_lua_state ~= RuntimeState then
+                    return Hook(...)
                 end
-            end
+
+                if not isSilentAimEnabled() then
+                    return Hook(...)
+                end
+
+                if not CalculateChance(SilentAimSettings.HitChance) then
+                    return Hook(...)
+                end
+
+                local Args   = { ... }
+                local Origin = Args[1]
+                local HitPart = getClosestPlayer()
+
+                if HitPart and Origin then
+                    Args[2] = getDirection(Origin, HitPart.Position)
+                end
+
+                return Hook(table.unpack(Args))
+            end))
         end
     end
-
-    return oldNamecall(...)
-end))
+end

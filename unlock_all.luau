@@ -6,11 +6,11 @@ local Settings = {
     Enabled             = false,
     WeaponSkin          = "Crystalline",
     AttachmentSkin      = "Gold",
-    AttachmentsEnabled  = true,
+    AttachmentsEnabled  = false,
     Attachments = {
-        Sight  = "ACOG",
-        Grip   = "Vertical Grip",
-        Muzzle = "Silencer",
+        Sight  = "",
+        Grip   = "",
+        Muzzle = "",
         Charm  = "",
         Extra  = "",
     },
@@ -50,6 +50,7 @@ local RuntimeState = {
     OriginalSetFullAttach   = nil,
     OriginalSetAttachOnWep  = nil,
     Hooked                  = false,
+    ApplySerial             = 0,
 }
 Global.__unlock_state = RuntimeState
 
@@ -190,6 +191,10 @@ local function applyKnifeToController(controller)
 
     pcall(function()
         local oldModel = safeRawGet(knifeTool, "Model")
+        if oldModel and oldModel:GetAttribute("UnlockAllKnife") == knifeName then
+            return
+        end
+
         local newModel = knifeTemplate:Clone()
 
         local hasAnims = newModel:FindFirstChild("Animations") or newModel:FindFirstChild("Animations", true)
@@ -223,6 +228,8 @@ local function applyKnifeToController(controller)
             end
         end
 
+        local parent = oldModel and oldModel.Parent or (controller.CameraModel or workspace.CurrentCamera)
+
         if oldModel then
             oldModel:Destroy()
         end
@@ -234,7 +241,7 @@ local function applyKnifeToController(controller)
             cw.SetModelProperties(newModel, false, false)
         end
 
-        local parent = oldModel and oldModel.Parent or (controller.CameraModel or workspace.CurrentCamera)
+        newModel:SetAttribute("UnlockAllKnife", knifeName)
         newModel.Parent = parent or workspace.CurrentCamera
         knifeTool.Model = newModel
     end)
@@ -290,6 +297,22 @@ end
 Settings.ApplyToCharacter = function()
     applyLive()
     applyToCharacter(LocalPlayer.Character)
+end
+
+local function queueApplyPasses(character)
+    RuntimeState.ApplySerial += 1
+    local serial = RuntimeState.ApplySerial
+
+    task.spawn(function()
+        for _, delayTime in ipairs({0.15, 0.5, 1, 2, 3.5, 5}) do
+            task.wait(delayTime)
+            if Global.__unlock_state ~= RuntimeState or RuntimeState.ApplySerial ~= serial then
+                return
+            end
+            applyToCharacter(character or LocalPlayer.Character)
+            applyLive()
+        end
+    end)
 end
 
 local function hookModules()
@@ -357,13 +380,12 @@ applyLive()
 
 if LocalPlayer.Character then
     applyToCharacter(LocalPlayer.Character)
+    queueApplyPasses(LocalPlayer.Character)
 end
 
 table.insert(RuntimeState.Connections,
     LocalPlayer.CharacterAdded:Connect(function(newChar)
         if Global.__unlock_state ~= RuntimeState then return end
-        task.wait(2)
-        applyToCharacter(newChar)
-        applyLive()
+        queueApplyPasses(newChar)
     end)
 )
