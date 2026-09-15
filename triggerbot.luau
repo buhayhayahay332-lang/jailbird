@@ -39,14 +39,32 @@ end
 local VisParams = RaycastParams.new()
 VisParams.FilterType = Enum.RaycastFilterType.Exclude
 
-local function isVisible(hrp, targetPart)
-    local char = LocalPlayer.Character
-    if not char or not hrp or not targetPart then return false end
-    VisParams.FilterDescendantsInstances = { char }
-    local dir = targetPart.Position - hrp.Position
+local function isVisible(targetPart)
+    local cam = Workspace.CurrentCamera
+    if not cam or not targetPart then return false end
+
+    local origin = cam.CFrame.Position
+    local dir = targetPart.Position - origin
     if dir.Magnitude == 0 then return false end
-    local result = Workspace:Raycast(hrp.Position, dir.Unit * dir.Magnitude, VisParams)
-    return not result or (result.Instance and result.Instance:IsDescendantOf(targetPart.Parent))
+
+    local ignore = { LocalPlayer.Character }
+    for _ = 1, 12 do
+        VisParams.FilterDescendantsInstances = ignore
+        local result = Workspace:Raycast(origin, dir.Unit * dir.Magnitude, VisParams)
+        if not result then return true end
+
+        local inst = result.Instance
+        if inst:IsDescendantOf(targetPart.Parent) then return true end
+
+        if (inst.Transparency >= 1) or (inst.CanCollide == false) then
+            ignore[#ignore + 1] = inst
+            origin = result.Position + dir.Unit * 0.01
+        else
+            return false
+        end
+    end
+
+    return false
 end
 
 local function getClosestTarget(cam)
@@ -67,7 +85,7 @@ local function getClosestTarget(cam)
         if not onScreen then continue end
         local dist = (Vector2.new(s.X, s.Y) - center).Magnitude
         if dist > bestDist then continue end
-        if TriggerbotSettings.VisibleCheck and not isVisible(LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart"), hrp) then continue end
+        if TriggerbotSettings.VisibleCheck and not isVisible(hrp) then continue end
         bestDist = dist
         best = hrp
     end
