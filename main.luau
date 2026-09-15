@@ -1,5 +1,5 @@
-print("3")
-local base = "https://raw.githubusercontent.com/buhayhayahay332-lang/jailbird/main/"
+warn("xd 5")
+local base = "https://gitlab.com/potanginamo373-lang/jailbird/-/raw/main/"
 
 local ESP = loadstring(game:HttpGet(base .. "c_esp.luau"))()
 loadstring(game:HttpGet(base .. "gun_mod.luau"))()
@@ -47,6 +47,7 @@ local SaveManager  = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))(
 
 
 local replicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+local LocalPlayer = game:GetService("Players").LocalPlayer
 
 local weaponSkinList = {}
 local attachSkinList = {}
@@ -107,12 +108,14 @@ table.sort(knifeList)
 
 local Options = Library.Options
 local Toggles = Library.Toggles
+getgenv().Toggles = Toggles
 
 -- WINDOW
 
 local Window = Library:CreateWindow({
-    Title            = "jailbird",
-    Footer           = " + ",
+    Title            = "Jailbird",
+    Icon             = 13129527031,
+    Footer           = "[ASTRO JAILBIRD]",
     ShowCustomCursor = true,
     NotifySide       = "Right",
     AutoShow         = true,
@@ -203,9 +206,21 @@ KnifebotGroup:AddToggle("KnifebotEnabled", {
     Text     = "Enable Knifebot",
     Default  = KnifebotSettings.Enabled,
     Callback = function(v)
-        KnifebotSettings.Enabled = v
+        local setEnabled = getgenv().__knifebot_set
+        if setEnabled then
+            setEnabled(v)
+        else
+            KnifebotSettings.Enabled = v
+        end
     end,
 })
+
+local KnifebotStatusLabel = KnifebotGroup:AddLabel("Knifebot: OFF")
+KnifebotStatusLabel:SetVisible(false)
+getgenv().__knifebot_status = function(isOn)
+    KnifebotStatusLabel:SetText(isOn and "Knifebot: ON" or "Knifebot: OFF")
+    KnifebotStatusLabel:SetVisible(isOn)
+end
 
 KnifebotGroup:AddLabel("Toggle Key"):AddKeyPicker("KnifebotKey", {
     Default  = KnifebotSettings.ToggleKey,
@@ -685,6 +700,8 @@ local promocodes = {
     "JAILBIRD",
     "MADDERSYT",
     "CHIVVEDYT",
+    "SKIRMISH",
+    "CARGO",
 }
 
 PromoGroup:AddButton({
@@ -1091,6 +1108,7 @@ RadarGroup:AddSlider("RadarSelfDotSize", {
 })
 
 -- RIGHT COLUMN
+--[[
 local ActionsGroup = Tabs.Visuals:AddRightGroupbox("ESP Actions", "zap")
 
 ActionsGroup:AddButton({
@@ -1110,6 +1128,7 @@ ActionsGroup:AddButton({
     end,
     Tooltip = "Destroys all active ESP overlays",
 })
+]]
 
 local ChamsGroup = Tabs.Visuals:AddRightGroupbox("Chams", "layers")
 
@@ -1489,7 +1508,6 @@ MenuGroup:AddButton({
 
 Library.ToggleKeybind = Options.MenuKeybind
 
--- THEME & SAVE MANAGER
 
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
@@ -1504,3 +1522,19 @@ SaveManager:BuildConfigSection(Tabs.Settings)
 ThemeManager:ApplyToTab(Tabs.Settings)
 
 SaveManager:LoadAutoloadConfig()
+
+local function ApplyFirstPerson()
+    LocalPlayer.CameraMode = Enum.CameraMode.LockFirstPerson
+    LocalPlayer.CameraMinZoomDistance = 0.5
+    LocalPlayer.CameraMaxZoomDistance = 0.5
+end
+
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+
+    ApplyFirstPerson()
+end)
+
+if LocalPlayer.Character then
+    ApplyFirstPerson()
+end
