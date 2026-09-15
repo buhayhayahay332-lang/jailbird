@@ -24,8 +24,51 @@ local RuntimeState = {
 }
 
 Global.__knifebot_state = RuntimeState
+
+local UISyncLocked = false
+
+local function setEnabled(value)
+    KnifebotSettings.Enabled = value
+
+    if not UISyncLocked then
+        local Toggles = Global.Toggles or (Global.Library and Global.Library.Toggles)
+        local toggle = Toggles and Toggles.KnifebotEnabled
+        if toggle then
+            UISyncLocked = true
+            pcall(function()
+                toggle:SetValue(KnifebotSettings.Enabled)
+            end)
+            UISyncLocked = false
+        end
+    end
+
+    if Global.__knifebot_status then
+        pcall(Global.__knifebot_status, KnifebotSettings.Enabled)
+    end
+
+    local Library = Global.Library
+    if KnifebotSettings.Enabled and not Global.__knifebot_notify then
+        pcall(function()
+            if Library and Library.Notify then
+                Global.__knifebot_notify = Library:Notify({
+                    Title       = "KNIFEBOT",
+                    Description = "ACTIVE",
+                    Icon        = "scissors",
+                    Persist     = true,
+                })
+            end
+        end)
+    elseif not KnifebotSettings.Enabled and Global.__knifebot_notify then
+        pcall(function()
+            Global.__knifebot_notify:Destroy()
+        end)
+        Global.__knifebot_notify = nil
+    end
+end
+
+Global.__knifebot_set = setEnabled
 Global.__knifebot_cleanup = function()
-    KnifebotSettings.Enabled = false
+    setEnabled(false)
     RuntimeState.LoopStarted = false
 end
 
@@ -59,13 +102,10 @@ end
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if Global.Library and Global.Library.IsPicking then return end
+    if UserInputService:GetFocusedTextBox() then return end
     if not keyMatches(input) then return end
 
-    KnifebotSettings.Enabled = not KnifebotSettings.Enabled
-    local Toggles = Global.Toggles or (Global.Library and Global.Library.Toggles)
-    if Toggles and Toggles.KnifebotEnabled then
-        Toggles.KnifebotEnabled:SetValue(KnifebotSettings.Enabled)
-    end
+    setEnabled(not KnifebotSettings.Enabled)
 end)
 
 local function knifeLoop()
