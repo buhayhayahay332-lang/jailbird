@@ -13,7 +13,7 @@ local SilentAimSettings = {
     
     FOVRadius = 150,
     FOVVisible = true,
-    ShowSilentAimTarget = true, 
+    ShowSilentAimTarget = false, 
     HitChance = 100
 }
 
